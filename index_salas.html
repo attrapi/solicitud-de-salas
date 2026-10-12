@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agenda de salas</title>
+<style>
+  :root { --vino:#4a0f24; --oro:#b08a2e; --fondo:#f0f1f4; --borde:#dfe2e8; --texto:#22181c; --gris:#6b7280; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, "Segoe UI", Arial, sans-serif; background:var(--fondo); color:var(--texto); }
+  header { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:20px 24px; flex-wrap:wrap; }
+  h1 { margin:0; font-size:28px; color:var(--vino); }
+  h2 { margin:0 0 4px; font-size:20px; }
+  main { padding:0 24px 40px; max-width:1100px; margin:0 auto; }
+  button { font:inherit; cursor:pointer; border-radius:8px; border:1px solid var(--borde); background:#fff; padding:9px 16px; }
+  button.principal { background:var(--oro); color:#fff; border-color:var(--oro); font-weight:600; }
+  button.vino { background:var(--vino); color:#fff; border-color:var(--vino); }
+  button.peligro { color:#b42318; border-color:#f0c4c0; }
+  button:disabled { opacity:.5; cursor:wait; }
+  .tarjetas { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+  .tarjeta { background:#fff; border:2px solid var(--borde); border-radius:12px; padding:18px; cursor:pointer; text-align:left; width:100%; }
+  .tarjeta:hover, .tarjeta.activa { border-color:var(--oro); }
+  .tarjeta .cap { font-size:34px; font-weight:700; color:var(--vino); }
+  .tarjeta small, .muted { color:var(--gris); }
+  .chips span { display:inline-block; background:#f3ecdb; color:#6b5210; border-radius:999px; padding:2px 10px; font-size:13px; margin:6px 6px 0 0; }
+  .panel { background:#fff; border:1px solid var(--borde); border-radius:12px; padding:20px; margin-top:20px; }
+  .barra { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .agenda { position:relative; height:660px; margin-left:54px; border-left:1px solid var(--borde); }
+  .linea { position:absolute; left:0; right:0; border-top:1px solid #eceef2; }
+  .linea span { position:absolute; left:-54px; top:-9px; width:46px; text-align:right; font-size:12px; color:var(--gris); }
+  .bloque { position:absolute; border-radius:6px; padding:4px 8px; font-size:13px; overflow:hidden; cursor:pointer; border:0; text-align:left; line-height:1.25; }
+  .bloque.aceptada { background:var(--vino); color:#fff; }
+  .bloque.pendiente { background:repeating-linear-gradient(45deg,#f6edd3,#f6edd3 8px,#efe2bb 8px,#efe2bb 16px); color:#5a4510; border:1px dashed var(--oro); }
+  .leyenda { font-size:13px; color:var(--gris); margin-top:10px; }
+  .fondo-modal { position:fixed; inset:0; background:rgba(20,10,14,.5); display:flex; align-items:center; justify-content:center; padding:16px; z-index:10; }
+  .modal { background:#fff; border-radius:12px; padding:22px; width:100%; max-width:440px; max-height:92vh; overflow:auto; }
+  label { display:block; font-size:13px; font-weight:600; margin:12px 0 4px; }
+  input, select { width:100%; font:inherit; padding:9px 10px; border:1px solid var(--borde); border-radius:8px; }
+  .dos { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .acciones { display:flex; gap:8px; justify-content:flex-end; margin-top:18px; flex-wrap:wrap; }
+  .error { color:#b42318; font-size:14px; margin-top:10px; min-height:18px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--gris); padding:8px; border-bottom:1px solid var(--borde); }
+  td { padding:10px 8px; border-bottom:1px solid #eef0f3; vertical-align:top; }
+  .tabla-scroll { overflow-x:auto; }
+  #aviso { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--vino); color:#fff; padding:10px 18px; border-radius:999px; display:none; z-index:20; max-width:90vw; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="titulo">Agenda de salas</h1>
+  <button class="principal" id="btnSolicitar">+ Solicitar sala</button>
+</header>
+<main id="app"><p class="muted">Cargando…</p></main>
+<div id="modal"></div>
+<div id="aviso"></div>
+
+<script>
+// ============================================================
+//  PEGA AQUÍ LA URL DE TU APLICACIÓN WEB DE APPS SCRIPT (termina en /exec)
+const API_URL = 'https://script.google.com/macros/s/AKfycbwyfNK36rn9eO7h8HJGgaH0Bbrrm8-7E2WsSgwKbFw5u9IvIgEVOWb6fbOWT4Zfts344A/exec';
+// ============================================================
+
+const EQUIPAMIENTO = ['TV', 'Wifi'];
+const HORA_INICIO = 9, HORA_FIN = 19;            // la agenda va de 9:00 a 19:00
+const ES_ADMIN = new URLSearchParams(location.search).has('admin');
+
+const estado = { salas: [], reservaciones: [], salaId: null, fecha: hoy(), clave: '' };
+
+// ---------- utilidades ----------
+function hoy() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function esc(t) {
+  return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+function minutos(hhmm) { const p = hhmm.split(':'); return Number(p[0]) * 60 + Number(p[1]); }
+function fechaLarga(f) {
+  const p = f.split('-');
+  return new Date(p[0], p[1] - 1, p[2]).toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+}
+function nombreSala(id) { const s = estado.salas.find(s => s.id === id); return s ? s.nombre : id; }
+function aviso(texto) {
+  const a = document.getElementById('aviso');
+  a.textContent = texto; a.style.display = 'block';
+  clearTimeout(aviso.t); aviso.t = setTimeout(() => a.style.display = 'none', 4500);
+}
+
+// ---------- comunicación con la hoja ----------
+async function cargar() {
+  const r = await fetch(API_URL);
+  const datos = await r.json();
+  estado.salas = datos.salas;
+  estado.reservaciones = datos.reservaciones;
+}
+async function enviar(cuerpo) {
+  // text/plain evita la verificación previa (CORS) que Apps Script no contesta
+  const r = await fetch(API_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(cuerpo) });
+  return r.json();
+}
+
+// ---------- vista pública ----------
+function pintar() {
+  if (ES_ADMIN) return pintarAdmin();
+  const app = document.getElementById('app');
+  let html = '<div class="tarjetas">';
+  estado.salas.forEach(s => {
+    html += '<button class="tarjeta' + (s.id === estado.salaId ? ' activa' : '') + '" data-sala="' + esc(s.id) + '">' +
+      '<h2>' + esc(s.nombre) + '</h2>' +
+      '<div class="cap">' + esc(s.capacidad) + ' <small style="font-size:15px;font-weight:400">lugares</small></div>' +
+      '<div class="chips">' + EQUIPAMIENTO.map(e => '<span>' + esc(e) + '</span>').join('') + '</div>' +
+      '</button>';
+  });
+  html += '</div>';
+
+  if (estado.salaId) {
+    html += '<div class="panel"><div class="barra"><div><h2>' + esc(nombreSala(estado.salaId)) + '</h2>' +
+      '<span class="muted">' + esc(fechaLarga(estado.fecha)) + '</span></div>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+      '<input type="date" id="fechaAgenda" value="' + esc(estado.fecha) + '" style="width:auto">' +
+      '<button class="principal" id="btnSolicitarSala">Solicitar esta sala</button></div></div>' +
+      agendaHTML() +
+      '<div class="leyenda">Sólido: reunión confirmada · Rayado: solicitud por confirmar. Toca un bloque para ver el detalle.</div></div>';
+  } else {
+    html += '<p class="muted" style="margin-top:18px">Elige una sala para ver su agenda.</p>';
+  }
+  app.innerHTML = html;
+}
+
+function agendaHTML() {
+  const total = (HORA_FIN - HORA_INICIO) * 60;
+  let html = '<div class="agenda">';
+  for (let h = HORA_INICIO; h <= HORA_FIN; h++) {
+    html += '<div class="linea" style="top:' + ((h - HORA_INICIO) * 60 / total * 100) + '%"><span>' + String(h).padStart(2, '0') + ':00</span></div>';
+  }
+  const delDia = estado.reservaciones
+    .filter(r => r.sala_id === estado.salaId && r.fecha === estado.fecha && (r.estatus === 'aceptada' || r.estatus === 'pendiente'))
+    .sort((a, b) => a.inicio.localeCompare(b.inicio));
+
+  // si dos solicitudes se empalman, se reparten en columnas
+  const finColumna = [];
+  delDia.forEach(r => {
+    let c = finColumna.findIndex(fin => fin <= r.inicio);
+    if (c === -1) { c = finColumna.length; finColumna.push(r.fin); } else finColumna[c] = r.fin;
+    r._col = c;
+  });
+  const cols = Math.max(finColumna.length, 1);
+
+  delDia.forEach(r => {
+    const ini = Math.max(minutos(r.inicio) - HORA_INICIO * 60, 0);
+    const fin = Math.min(minutos(r.fin) - HORA_INICIO * 60, total);
+    if (fin <= ini) return;
+    html += '<button class="bloque ' + esc(r.estatus) + '" data-res="' + esc(r.id) + '" style="top:' + (ini / total * 100) + '%;height:calc(' + ((fin - ini) / total * 100) + '% - 2px);' +
+      'left:calc(' + (r._col / cols * 100) + '% + 6px);width:calc(' + (100 / cols) + '% - 12px)">' +
+      '<strong>' + esc(r.inicio) + '–' + esc(r.fin) + '</strong> ' + esc(r.tema) + '<br>' + esc(r.nombre) + '</button>';
+  });
+  return html + '</div>';
+}
+
+function modalDetalle(id) {
+  const r = estado.reservaciones.find(r => r.id === id);
+  if (!r) return;
+  document.getElementById('modal').innerHTML = '<div class="fondo-modal" data-cerrar><div class="modal">' +
+    '<h2>' + esc(nombreSala(r.sala_id)) + '</h2>' +
+    '<p><strong>Nombre:</strong> ' + esc(r.nombre) + '<br><strong>Tema:</strong> ' + esc(r.tema) + '<br>' +
+    '<strong>Horario:</strong> ' + esc(fechaLarga(r.fecha)) + ', ' + esc(r.inicio) + '–' + esc(r.fin) + '<br>' +
+    '<strong>Estatus:</strong> ' + (r.estatus === 'aceptada' ? 'Confirmada' : 'Por confirmar') + '</p>' +
+    '<div class="acciones"><button data-cerrar>Cerrar</button></div></div></div>';
+}
+
+function modalSolicitud(salaId) {
+  const opciones = estado.salas.map(s => '<option value="' + esc(s.id) + '"' + (s.id === salaId ? ' selected' : '') + '>' + esc(s.nombre) + ' (' + esc(s.capacidad) + ' lugares)</option>').join('');
+  document.getElementById('modal').innerHTML = '<div class="fondo-modal"><form class="modal" id="formSolicitud">' +
+    '<h2>Solicitar sala</h2><span class="muted">Tu solicitud queda pendiente hasta que sea aceptada.</span>' +
+    '<label>Sala</label><select name="sala_id" required>' + opciones + '</select>' +
+    '<label>Fecha</label><input type="date" name="fecha" required min="' + hoy() + '" value="' + esc(estado.fecha < hoy() ? hoy() : estado.fecha) + '">' +
+    '<div class="dos"><div><label>Inicio</label><input type="time" name="inicio" required min="09:00" max="19:00" step="900" value="09:00"></div>' +
+    '<div><label>Término</label><input type="time" name="fin" required min="09:00" max="19:00" step="900" value="10:00"></div></div>' +
+    '<label>Nombre de quien solicita</label><input name="nombre" required maxlength="80">' +
+    '<label>Tema de la reunión</label><input name="tema" required maxlength="120">' +
+    '<div class="error" id="errorForm"></div>' +
+    '<div class="acciones"><button type="button" data-cerrar>Cancelar</button><button class="principal" type="submit">Enviar solicitud</button></div></form></div>';
+}
+
+// ---------- vista del gestor (?admin=1) ----------
+function pintarAdmin() {
+  document.getElementById('titulo').textContent = 'Agenda de salas · Gestor';
+  document.getElementById('btnSolicitar').style.display = 'none';
+  const app = document.getElementById('app');
+  if (!estado.clave) {
+    app.innerHTML = '<form class="panel" id="formClave" style="max-width:360px"><h2>Acceso del gestor</h2>' +
+      '<label>Clave</label><input type="password" name="clave" required autofocus><div class="error" id="errorForm"></div>' +
+      '<div class="acciones"><button class="vino" type="submit">Entrar</button></div></form>';
+    return;
+  }
+  const orden = (a, b) => (a.fecha + a.inicio).localeCompare(b.fecha + b.inicio);
+  const pendientes = estado.reservaciones.filter(r => r.estatus === 'pendiente').sort(orden);
+  const aceptadas = estado.reservaciones.filter(r => r.estatus === 'aceptada' && r.fecha >= hoy()).sort(orden);
+
+  const tabla = (lista, botones) => lista.length === 0 ? '<p class="muted">No hay registros.</p>' :
+    '<div class="tabla-scroll"><table><tr><th>Fecha / horario</th><th>Sala</th><th>Solicita</th><th>Tema</th><th></th></tr>' +
+    lista.map(r => '<tr><td><strong>' + esc(r.fecha) + '</strong><br>' + esc(r.inicio) + '–' + esc(r.fin) + '</td><td>' + esc(nombreSala(r.sala_id)) +
+      '</td><td>' + esc(r.nombre) + '</td><td>' + esc(r.tema) + '</td><td style="white-space:nowrap">' + botones(r) + '</td></tr>').join('') + '</table></div>';
+
+  app.innerHTML =
+    '<div class="panel"><h2>Solicitudes pendientes (' + pendientes.length + ')</h2>' +
+    tabla(pendientes, r => '<button class="vino" data-estatus="aceptada" data-id="' + esc(r.id) + '">Aceptar</button> <button class="peligro" data-estatus="rechazada" data-id="' + esc(r.id) + '">Rechazar</button>') + '</div>' +
+    '<div class="panel"><h2>Reuniones confirmadas (de hoy en adelante)</h2>' +
+    tabla(aceptadas, r => '<button class="peligro" data-estatus="cancelada" data-id="' + esc(r.id) + '">Cancelar</button>') + '</div>';
+}
+
+// ---------- eventos ----------
+document.addEventListener('click', async e => {
+  const t = e.target;
+  if (t.hasAttribute('data-cerrar') && (t.tagName === 'BUTTON' || t === e.target.closest('.fondo-modal') && !e.target.closest('.modal'))) {
+    document.getElementById('modal').innerHTML = ''; return;
+  }
+  const tarjeta = t.closest('[data-sala]');
+  if (tarjeta) { estado.salaId = tarjeta.dataset.sala; pintar(); return; }
+  const bloque = t.closest('[data-res]');
+  if (bloque) { modalDetalle(bloque.dataset.res); return; }
+  if (t.id === 'btnSolicitar' || t.id === 'btnSolicitarSala') { modalSolicitud(estado.salaId); return; }
+
+  if (t.dataset.estatus) {
+    if (t.dataset.estatus !== 'aceptada' && !t.dataset.confirmar) {   // segundo clic para confirmar
+      t.dataset.confirmar = '1'; t.textContent = '¿Seguro?'; return;
+    }
+    t.disabled = true;
+    try {
+      const r = await enviar({ accion:'estatus', id:t.dataset.id, estatus:t.dataset.estatus, clave:estado.clave });
+      if (!r.ok) aviso(r.error);
+      await cargar();
+    } catch (x) { aviso('No se pudo conectar. Intenta de nuevo.'); }
+    pintar();
+  }
+});
+
+document.addEventListener('change', e => {
+  if (e.target.id === 'fechaAgenda' && e.target.value) { estado.fecha = e.target.value; pintar(); }
+});
+
+document.addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target, datos = Object.fromEntries(new FormData(f)), err = f.querySelector('#errorForm');
+  const boton = f.querySelector('[type=submit]');
+  boton.disabled = true; err.textContent = '';
+  try {
+    if (f.id === 'formClave') {
+      const r = await enviar({ accion:'verificar', clave:datos.clave });
+      if (!r.ok) { err.textContent = r.error; boton.disabled = false; return; }
+      estado.clave = datos.clave;
+      try { sessionStorage.setItem('claveSalas', datos.clave); } catch (x) {}
+      pintar();
+    } else {
+      if (datos.inicio >= datos.fin) { err.textContent = 'La hora de término debe ser posterior a la de inicio.'; boton.disabled = false; return; }
+      datos.accion = 'solicitar';
+      const r = await enviar(datos);
+      if (!r.ok) { err.textContent = r.error; boton.disabled = false; return; }
+      document.getElementById('modal').innerHTML = '';
+      estado.salaId = datos.sala_id; estado.fecha = datos.fecha;
+      await cargar(); pintar();
+      aviso('Solicitud enviada. Queda pendiente de aceptación.');
+    }
+  } catch (x) { err.textContent = 'No se pudo conectar. Intenta de nuevo.'; boton.disabled = false; }
+});
+
+// ---------- arranque ----------
+(async function () {
+  if (API_URL.indexOf('http') !== 0) {
+    document.getElementById('app').innerHTML = '<div class="panel">Falta pegar la URL de Apps Script en la constante <code>API_URL</code> de este archivo.</div>';
+    return;
+  }
+  try { estado.clave = sessionStorage.getItem('claveSalas') || ''; } catch (x) {}
+  try { await cargar(); pintar(); }
+  catch (x) { document.getElementById('app').innerHTML = '<div class="panel">No se pudieron cargar los datos. Revisa la URL de Apps Script y que esté implementada con acceso "Cualquier usuario".</div>'; }
+  // refresco automático cada minuto, si no hay un formulario abierto
+  setInterval(async () => {
+    if (document.getElementById('modal').innerHTML || document.getElementById('formClave')) return;
+    try { await cargar(); pintar(); } catch (x) {}
+  }, 60000);
+})();
+</script>
+</body>
+</html>
