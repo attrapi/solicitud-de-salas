@@ -3,282 +3,1365 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agenda de salas</title>
+<title>Agenda de salas · ATTRAPI</title>
+<link rel="icon" href="logos/logo_attrapi.png">
 <style>
-  :root { --vino:#4a0f24; --oro:#b08a2e; --fondo:#f0f1f4; --borde:#dfe2e8; --texto:#22181c; --gris:#6b7280; }
-  * { box-sizing: border-box; }
-  body { margin:0; font-family: system-ui, "Segoe UI", Arial, sans-serif; background:var(--fondo); color:var(--texto); }
-  header { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:20px 24px; flex-wrap:wrap; }
-  h1 { margin:0; font-size:28px; color:var(--vino); }
-  h2 { margin:0 0 4px; font-size:20px; }
-  main { padding:0 24px 40px; max-width:1100px; margin:0 auto; }
-  button { font:inherit; cursor:pointer; border-radius:8px; border:1px solid var(--borde); background:#fff; padding:9px 16px; }
-  button.principal { background:var(--oro); color:#fff; border-color:var(--oro); font-weight:600; }
-  button.vino { background:var(--vino); color:#fff; border-color:var(--vino); }
-  button.peligro { color:#b42318; border-color:#f0c4c0; }
-  button:disabled { opacity:.5; cursor:wait; }
-  .tarjetas { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
-  .tarjeta { background:#fff; border:2px solid var(--borde); border-radius:12px; padding:18px; cursor:pointer; text-align:left; width:100%; }
-  .tarjeta:hover, .tarjeta.activa { border-color:var(--oro); }
-  .tarjeta .cap { font-size:34px; font-weight:700; color:var(--vino); }
-  .tarjeta small, .muted { color:var(--gris); }
-  .chips span { display:inline-block; background:#f3ecdb; color:#6b5210; border-radius:999px; padding:2px 10px; font-size:13px; margin:6px 6px 0 0; }
-  .panel { background:#fff; border:1px solid var(--borde); border-radius:12px; padding:20px; margin-top:20px; }
-  .barra { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
-  .agenda { position:relative; height:660px; margin-left:54px; border-left:1px solid var(--borde); }
-  .linea { position:absolute; left:0; right:0; border-top:1px solid #eceef2; }
-  .linea span { position:absolute; left:-54px; top:-9px; width:46px; text-align:right; font-size:12px; color:var(--gris); }
-  .bloque { position:absolute; border-radius:6px; padding:4px 8px; font-size:13px; overflow:hidden; cursor:pointer; border:0; text-align:left; line-height:1.25; }
-  .bloque.aceptada { background:var(--vino); color:#fff; }
-  .bloque.pendiente { background:repeating-linear-gradient(45deg,#f6edd3,#f6edd3 8px,#efe2bb 8px,#efe2bb 16px); color:#5a4510; border:1px dashed var(--oro); }
-  .leyenda { font-size:13px; color:var(--gris); margin-top:10px; }
-  .fondo-modal { position:fixed; inset:0; background:rgba(20,10,14,.5); display:flex; align-items:center; justify-content:center; padding:16px; z-index:10; }
-  .modal { background:#fff; border-radius:12px; padding:22px; width:100%; max-width:440px; max-height:92vh; overflow:auto; }
-  label { display:block; font-size:13px; font-weight:600; margin:12px 0 4px; }
-  input, select { width:100%; font:inherit; padding:9px 10px; border:1px solid var(--borde); border-radius:8px; }
-  .dos { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .acciones { display:flex; gap:8px; justify-content:flex-end; margin-top:18px; flex-wrap:wrap; }
-  .error { color:#b42318; font-size:14px; margin-top:10px; min-height:18px; }
-  table { width:100%; border-collapse:collapse; font-size:14px; }
-  th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--gris); padding:8px; border-bottom:1px solid var(--borde); }
-  td { padding:10px 8px; border-bottom:1px solid #eef0f3; vertical-align:top; }
-  .tabla-scroll { overflow-x:auto; }
-  #aviso { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--vino); color:#fff; padding:10px 18px; border-radius:999px; display:none; z-index:20; max-width:90vw; }
+  @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@500;600;700;800&display=swap');
+  :root{
+    --vino:#4a0f24;
+    --vino-2:#67152f;
+    --vino-3:#350d19;
+    --oro:#b08a2e;
+    --oro-osc:#8a6a1c;
+    --acento-claro:#f6eef1;
+    --bg:#f1f3f5;
+    --surface:#ffffff;
+    --borde:#dbe1e6;
+    --texto:#182530;
+    --suave:#5b6b7c;
+    --tenue:#8b99a8;
+    --st-pendiente:#d99a2b;
+    --st-proxima:#b08725;
+    --st-curso:#2e8b57;
+    --st-concluida:#5b6b7c;
+    --st-cancelada:#c0392b;
+    --radio:6px;
+    --radio-sm:4px;
+    --sombra:0 1px 2px rgba(11,36,54,.06), 0 8px 24px -12px rgba(11,36,54,.18);
+    --fuente:'Barlow', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    --fuente-tit:'Barlow Condensed', -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono:ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{font-family:var(--fuente);background:var(--bg);color:var(--texto);-webkit-font-smoothing:antialiased;min-height:100vh;}
+  h1,h2,h3,h4{margin:0;font-weight:800;color:var(--vino);font-family:var(--fuente-tit);letter-spacing:.01em;}
+  p{margin:0;}
+  a{color:var(--vino-2);}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;}
+  :focus-visible{outline:2.5px solid var(--vino-2);outline-offset:2px;border-radius:4px;}
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.001ms !important;transition-duration:.001ms !important;} }
+  .icono{width:18px;height:18px;flex-shrink:0;}
+  .ceja{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--vino-2);}
+  .mono{font-family:var(--mono);}
+
+  /* ---------- Encabezado ---------- */
+  .barra-sup{background:var(--vino);color:#fff;}
+  .barra-sup .interior{max-width:1180px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;}
+  .marca{display:flex;align-items:center;gap:14px;}
+  .marca img{height:40px;width:auto;object-fit:contain;user-select:none;-webkit-user-drag:none;}
+  .marca .txt .t1{font-family:var(--fuente-tit);font-size:21px;font-weight:800;letter-spacing:.02em;line-height:1.1;}
+  .marca .txt .t2{font-size:11.5px;color:#e3cdd5;letter-spacing:.06em;text-transform:uppercase;font-weight:600;}
+  .acciones-sup{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+
+  main{max-width:1180px;margin:0 auto;padding:24px 22px 56px;}
+  .encab-vista{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+  .encab-vista h1{font-size:30px;line-height:1.1;}
+  .encab-vista .sub{font-size:12.5px;color:var(--suave);margin-top:3px;}
+
+  /* ---------- Botones ---------- */
+  .btn{display:inline-flex;align-items:center;gap:7px;text-decoration:none;border-radius:var(--radio-sm);padding:9px 14px;font-size:13px;font-weight:700;white-space:nowrap;border:1.5px solid var(--borde);background:#fff;color:var(--vino);}
+  .btn:hover{background:var(--bg);}
+  .btn-oro{background:var(--oro);color:#fff;border-color:var(--oro);}
+  .btn-oro:hover{background:var(--oro-osc);border-color:var(--oro-osc);}
+  .btn-vino{background:var(--vino);color:#fff;border-color:var(--vino);}
+  .btn-vino:hover{background:var(--vino-2);border-color:var(--vino-2);}
+  .btn-verde{background:var(--st-curso);color:#fff;border-color:var(--st-curso);}
+  .btn-verde:hover{filter:brightness(.93);}
+  .btn-peligro{background:#fff;border-color:#f0c6c1;color:#b4392e;}
+  .btn-peligro:hover{background:#fcebea;}
+  .btn-claro{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.35);color:#fff;}
+  .btn-claro:hover{background:rgba(255,255,255,.22);}
+  .btn:disabled{opacity:.55;cursor:not-allowed;}
+  .btn-icono{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border-radius:var(--radio-sm);border:1.5px solid var(--borde);background:#fff;color:var(--suave);}
+  .btn-icono:hover{background:var(--bg);color:var(--vino);}
+  .btn-icono.peligro{color:#b4392e;border-color:#f0c6c1;}
+  .btn-icono.peligro:hover{background:#fcebea;}
+  .btn-texto{background:none;border:none;color:var(--vino-2);font-size:12.5px;font-weight:700;text-decoration:underline;padding:0;}
+
+  /* ---------- Paneles ---------- */
+  .panel{background:var(--surface);border:1px solid var(--borde);border-radius:var(--radio);box-shadow:var(--sombra);padding:18px;margin-bottom:16px;}
+  .panel h3{font-size:15px;margin-bottom:3px;}
+  .panel .desc{font-size:12px;color:var(--suave);margin-bottom:14px;}
+  .aviso-caja{background:var(--acento-claro);color:var(--vino-3);border-radius:var(--radio-sm);padding:10px 12px;font-size:12px;line-height:1.6;margin-bottom:14px;display:flex;gap:9px;align-items:flex-start;}
+  .aviso-caja .icono{margin-top:1px;color:var(--vino-2);}
+  .aviso-caja a{color:var(--vino-2);text-decoration:underline;word-break:break-all;}
+  .aviso-caja.alerta{background:#fdf1ec;color:#8a3522;}
+  .aviso-caja.alerta .icono{color:#c0392b;}
+  .barra-herr{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+
+  /* ---------- Formularios ---------- */
+  .rejilla{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .rejilla .todo{grid-column:1/-1;}
+  .campo{display:flex;flex-direction:column;gap:5px;}
+  .campo label{font-size:12px;font-weight:700;color:var(--suave);letter-spacing:.02em;}
+  .campo input,.campo select,.campo textarea{border:1.5px solid var(--borde);border-radius:var(--radio-sm);padding:10px 12px;font-size:14px;color:var(--texto);background:#fbfcfd;width:100%;}
+  .campo input:focus,.campo select:focus,.campo textarea:focus{border-color:var(--vino-2);background:#fff;}
+  .campo textarea{resize:vertical;min-height:88px;}
+  .campo .pista{font-size:11.5px;color:var(--tenue);}
+  .marca-check{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--texto);font-weight:600;cursor:pointer;}
+  .marca-check input{width:16px;height:16px;accent-color:var(--vino);}
+  .acciones-form{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+  .error-form{display:none;font-size:12.5px;color:#c0392b;margin-top:10px;font-weight:600;}
+  @media (max-width:620px){ .rejilla{grid-template-columns:1fr;} }
+
+  /* ---------- Tarjetas de salas ---------- */
+  .tarjetas{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+  .tarjeta{background:var(--surface);border:2px solid var(--borde);border-radius:var(--radio);box-shadow:var(--sombra);padding:16px;cursor:pointer;text-align:left;width:100%;font-family:inherit;}
+  .tarjeta:hover{border-color:var(--oro);}
+  .tarjeta.activa{border-color:var(--vino);}
+  .tarjeta h3{font-size:18px;}
+  .tarjeta .cap{font-size:32px;font-weight:800;color:var(--vino);font-family:var(--fuente-tit);line-height:1.1;margin-top:4px;}
+  .tarjeta .cap small{font-size:14px;font-weight:600;color:var(--suave);font-family:var(--fuente);}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .chips span{background:#f5eee0;color:#6b5210;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;}
+  .chips span.ocupada{background:#fdeceb;color:#a33225;}
+  .chips span.libre{background:#e9f4ee;color:#226a44;}
+
+  /* ---------- Agenda del día ---------- */
+  .agenda{position:relative;height:720px;margin-left:56px;border-left:1px solid var(--borde);}
+  .linea{position:absolute;left:0;right:0;border-top:1px solid #eceef2;}
+  .linea span{position:absolute;left:-56px;top:-9px;width:48px;text-align:right;font-size:11.5px;color:var(--tenue);font-family:var(--mono);}
+  .bloque{position:absolute;border-radius:5px;padding:5px 8px;font-size:12.5px;overflow:hidden;cursor:pointer;border:0;text-align:left;line-height:1.3;font-family:inherit;}
+  .bloque strong{display:block;font-family:var(--mono);font-size:11.5px;}
+  .bloque.aceptada{background:var(--vino);color:#fff;}
+  .bloque.en_curso{background:var(--st-curso);color:#fff;}
+  .bloque.concluida{background:#7d8a97;color:#fff;}
+  .bloque.pendiente{background:repeating-linear-gradient(45deg,#f8f0d8,#f8f0d8 8px,#efe2bb 8px,#efe2bb 16px);color:#5a4510;border:1px dashed var(--oro);}
+  .bloque.bloqueo{background:repeating-linear-gradient(45deg,#fbeaea,#fbeaea 8px,#f4d6d4 8px,#f4d6d4 16px);color:#8d2e22;border:1px dashed #c0392b;}
+  .leyenda{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--suave);margin-top:14px;}
+  .leyenda i{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:6px;vertical-align:-2px;}
+
+  /* ---------- Tablero ---------- */
+  .tablero-marco{border-radius:var(--radio-sm);overflow:hidden;border:1px solid #d9dee3;}
+  .fila{display:grid;grid-template-columns:1.1fr 1fr 1.1fr 1.5fr 1fr 1.1fr;align-items:center;background:#fff;}
+  .fila.encabezado{background:#e4e7eb;}
+  .fila.encabezado .celda{color:var(--vino);font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+  .fila:not(.encabezado){border-top:1px solid #e4e7eb;}
+  .fila.bloqueada{background:#fbefef;}
+  .tablero-marco.con-gestion .fila{grid-template-columns:1fr .9fr .9fr 1.4fr .9fr .9fr 1.3fr;}
+  .celda{padding:12px 14px;font-family:var(--mono);font-size:12.5px;color:var(--vino);}
+  .celda.hora{font-weight:800;}
+  .celda.sala{font-weight:800;color:var(--oro-osc);text-transform:uppercase;letter-spacing:.03em;}
+  .celda .sub-dato{display:flex;align-items:flex-start;gap:5px;margin-top:4px;font-size:11px;color:var(--suave);font-weight:600;font-family:var(--fuente);}
+  .celda .sub-dato .icono{width:12px;height:12px;margin-top:2px;}
+  .celda.estatus span{display:inline-block;font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:11px;border:1.5px solid;border-radius:20px;padding:4px 10px;text-align:center;}
+  .celda.gestion{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .celda.gestion select{border:1.5px solid var(--borde);border-radius:var(--radio-sm);padding:6px 8px;font-size:12px;background:#fbfcfd;max-width:130px;}
+  .vacio{padding:34px 14px;text-align:center;color:var(--tenue);font-size:13px;grid-column:1/-1;}
+  @media (max-width:900px){
+    .fila{grid-template-columns:1fr;gap:2px;padding:10px 0;}
+    .fila.encabezado{display:none;}
+    .celda{padding:4px 14px;}
+    .celda::before{content:attr(data-et);display:block;font-family:var(--fuente);font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tenue);margin-bottom:2px;}
+  }
+
+  /* ---------- Solicitudes pendientes (admin) ---------- */
+  .sol-card{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:14px 0;border-bottom:1px solid var(--borde);flex-wrap:wrap;}
+  .sol-card:last-child{border-bottom:none;}
+  .sol-card .tit{font-size:14.5px;font-weight:800;color:var(--vino);font-family:var(--fuente-tit);letter-spacing:.02em;}
+  .sol-card .dato{font-size:12px;color:var(--suave);margin-top:2px;}
+  .sol-card .dato b{color:var(--texto);}
+  .sol-card .choque{display:flex;align-items:flex-start;gap:6px;color:#c0392b;font-weight:700;font-size:12px;margin-top:4px;}
+  .sol-card .sol-acciones{display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;}
+  .fila-lista{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--borde);font-size:13px;color:var(--vino);}
+  .fila-lista:last-child{border-bottom:none;}
+  .fila-lista .acc{display:flex;gap:6px;}
+
+  /* ---------- Pantalla de proyección ---------- */
+  .kiosko{min-height:100vh;background:#f0f1f3;padding:34px clamp(18px,4vw,70px);font-family:var(--fuente);}
+  .kiosko-logos{display:flex;align-items:center;justify-content:center;gap:clamp(20px,4vw,56px);flex-wrap:wrap;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #d9dee3;}
+  .kiosko-logos img{height:clamp(34px,4.4vw,56px);width:auto;object-fit:contain;}
+  .kiosko-encab{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px;}
+  .kiosko-tit{font-family:var(--fuente-tit);font-size:clamp(26px,3.4vw,44px);font-weight:800;color:var(--vino);letter-spacing:.01em;}
+  .kiosko-reloj{font-size:clamp(14px,1.4vw,21px);font-weight:700;color:var(--suave);font-family:var(--mono);}
+  .kiosko .tablero-marco{border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.08);border:none;}
+  .kiosko .fila{grid-template-columns:1.1fr 1.1fr 1.1fr 1.5fr 1.2fr 1fr;}
+  .kiosko .celda{padding:16px 20px;font-size:clamp(13px,1.35vw,20px);}
+  .kiosko .fila.encabezado .celda{font-size:clamp(10px,1vw,13px);}
+  .kiosko .celda.estatus span{font-size:clamp(11px,1.05vw,15px);padding:5px 13px;}
+  .kiosko-pie{margin-top:18px;text-align:center;font-size:12.5px;color:var(--tenue);}
+
+  /* ---------- Modal ---------- */
+  .fondo-modal{position:fixed;inset:0;background:rgba(20,10,14,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:40;}
+  .modal{background:#fff;border-radius:var(--radio);padding:22px;width:100%;max-width:460px;max-height:92vh;overflow:auto;box-shadow:0 24px 60px rgba(0,0,0,.3);}
+  .modal h3{font-size:19px;margin-bottom:10px;}
+  .modal .dato{font-size:13px;color:var(--texto);margin-top:6px;}
+  .modal .dato b{color:var(--vino);}
+
+  /* ---------- Formulario público centrado ---------- */
+  .hoja{max-width:560px;margin:34px auto;padding:0 18px;}
+  .hoja-encab{text-align:center;margin-bottom:18px;}
+  .hoja-encab img{height:52px;width:auto;margin-bottom:12px;}
+  .hoja-encab .t1{font-family:var(--fuente-tit);font-size:27px;font-weight:800;color:var(--vino);letter-spacing:.01em;}
+  .hoja-encab .t2{font-size:13px;color:var(--suave);margin-top:4px;line-height:1.5;}
+  .exito{text-align:center;padding:10px 0;}
+  .exito .t1{font-family:var(--fuente-tit);font-size:22px;font-weight:800;color:var(--st-curso);margin-bottom:6px;}
+  .exito .t2{font-size:13px;color:var(--suave);line-height:1.6;}
+
+  /* ---------- Avisos flotantes ---------- */
+  #aviso{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--vino);color:#fff;padding:11px 20px;border-radius:999px;display:none;z-index:60;max-width:90vw;font-size:13.5px;font-weight:600;box-shadow:0 10px 28px rgba(0,0,0,.25);}
+  .cargando{text-align:center;color:var(--suave);font-size:13.5px;padding:50px 0;}
 </style>
 </head>
 <body>
-<header>
-  <h1 id="titulo">Agenda de salas</h1>
-  <button class="principal" id="btnSolicitar">+ Solicitar sala</button>
-</header>
-<main id="app"><p class="muted">Cargando…</p></main>
+<div id="raiz"><div class="cargando">Cargando…</div></div>
 <div id="modal"></div>
 <div id="aviso"></div>
-
 <script>
 // ============================================================
 //  PEGA AQUÍ LA URL DE TU APLICACIÓN WEB DE APPS SCRIPT (termina en /exec)
 const API_URL = 'https://script.google.com/macros/s/AKfycbwyfNK36rn9eO7h8HJGgaH0Bbrrm8-7E2WsSgwKbFw5u9IvIgEVOWb6fbOWT4Zfts344A/exec';
 // ============================================================
 
+const LOGO = 'logos/logo_attrapi.png';
+const HORA_MIN = 7, HORA_MAX = 20, PASO = 30;     // la agenda y los horarios van de 7:00 a 20:00, de 30 en 30 minutos
 const EQUIPAMIENTO = ['TV', 'Wifi'];
-const HORA_INICIO = 9, HORA_FIN = 19;            // la agenda va de 9:00 a 19:00
-const ES_ADMIN = new URLSearchParams(location.search).has('admin');
+const ZONA = 'America/Mexico_City';
 
-const estado = { salas: [], reservaciones: [], salaId: null, fecha: hoy(), clave: '' };
+// Listas que se usan la primera vez (después el panel y las propias solicitudes las van llenando).
+const PROYECTOS_BASE = [
+  'Querétaro - Irapuato', 'Saltillo - Nuevo Laredo', 'Aifa - Pachuca', 'México - Querétaro',
+  'Saltillo - Monterrey', 'Monterrey - Nuevo Laredo', 'Querétaro - San Luis Potosí',
+  'San Luis Potosí - Saltillo', 'Irapuato - Guadalajara', 'TIMT - Tren Interurbano México Toluca',
+  'Trolebús Chalco - Ixtapaluca', 'L12', 'Observatorio', 'DC C Metrop'
+];
+const AREAS_BASE = ['SGOI-A', 'SGOI-B', 'SGOI-C', 'SPAC', 'DPAC', 'SA'];
 
-// ---------- utilidades ----------
-function hoy() {
-  const d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-}
+const ESTATUS = {
+  pendiente: { etiqueta:'PENDIENTE', color:'var(--st-pendiente)', texto:'Por confirmar' },
+  aceptada:  { etiqueta:'PRÓXIMA',   color:'var(--st-proxima)',   texto:'Confirmada' },
+  en_curso:  { etiqueta:'EN CURSO',  color:'var(--st-curso)',     texto:'En curso' },
+  concluida: { etiqueta:'CONCLUIDA', color:'var(--st-concluida)', texto:'Concluida' },
+  cancelada: { etiqueta:'CANCELADA', color:'var(--st-cancelada)', texto:'Cancelada' },
+  rechazada: { etiqueta:'RECHAZADA', color:'var(--st-cancelada)', texto:'Rechazada' }
+};
+// Estatus que apartan la sala. Una solicitud pendiente también aparta, para que dos
+// personas no pidan el mismo horario mientras el administrador decide.
+const OCUPAN = ['pendiente', 'aceptada', 'en_curso', 'concluida'];
+const EN_TABLERO = ['aceptada', 'en_curso', 'concluida', 'cancelada'];
+
+const parametros = new URLSearchParams(location.search);
+const VISTA = parametros.has('tablero') ? 'tablero'
+            : parametros.has('solicitud') ? 'solicitud'
+            : parametros.has('admin') ? 'admin' : 'salas';
+
+const estado = {
+  backendNuevo: false, salas: [], reservaciones: [], proyectos: [], areas: [], bloqueos: [], sugeridos: [],
+  salaId: null, fecha: hoyMx(), clave: '',
+  editandoId: null, formAbierto: '', editandoItem: null, desde: '', hasta: '', enviado: false
+};
+
+/* ------------------------------------------------------------
+   Utilidades
+   ------------------------------------------------------------ */
 function esc(t) {
   return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 }
-function minutos(hhmm) { const p = hhmm.split(':'); return Number(p[0]) * 60 + Number(p[1]); }
-function fechaLarga(f) {
-  const p = f.split('-');
-  return new Date(p[0], p[1] - 1, p[2]).toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+function aBool(v, pordefecto) {
+  if (v === undefined || v === null || v === '') return pordefecto !== false;
+  if (typeof v === 'boolean') return v;
+  const t = String(v).trim().toLowerCase();
+  return !(t === 'false' || t === '0' || t === 'no');
 }
-function nombreSala(id) { const s = estado.salas.find(s => s.id === id); return s ? s.nombre : id; }
+// Siempre la fecha de México, aunque la computadora o la tele tengan otra zona horaria.
+function hoyMx() {
+  try {
+    const p = {};
+    new Intl.DateTimeFormat('en-CA', { timeZone: ZONA, year:'numeric', month:'2-digit', day:'2-digit' })
+      .formatToParts(new Date()).forEach(x => { p[x.type] = x.value; });
+    return p.year + '-' + p.month + '-' + p.day;
+  } catch (e) {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+}
+function fmtFecha(iso) {
+  const p = String(iso || '').split('-');
+  return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : (iso || '—');
+}
+function capitalizar(s) { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); }
+function fechaLarga(f) {
+  const p = String(f || '').split('-');
+  if (p.length !== 3) return f || '';
+  return capitalizar(new Date(p[0], p[1] - 1, p[2]).toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long', year:'numeric' }));
+}
+function toMin(t) {
+  if (!t) return null;
+  const p = String(t).split(':');
+  if (p.length < 2) return null;
+  const h = Number(p[0]), m = Number(p[1]);
+  return (isNaN(h) || isNaN(m)) ? null : h * 60 + m;
+}
+function aHora(m) { return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+function enlaceSeguro(u) { const t = String(u || '').trim(); return /^https?:\/\//i.test(t) ? t : ''; }
+function nombreSala(id) { const s = estado.salas.find(s => s.id === id); return s ? s.nombre : (id || '—'); }
+function salaPorNombre(n) { return estado.salas.find(s => s.nombre === n); }
 function aviso(texto) {
   const a = document.getElementById('aviso');
   a.textContent = texto; a.style.display = 'block';
-  clearTimeout(aviso.t); aviso.t = setTimeout(() => a.style.display = 'none', 4500);
+  clearTimeout(aviso.t); aviso.t = setTimeout(() => { a.style.display = 'none'; }, 5000);
+}
+function unicos(lista) {
+  const vistos = {}, out = [];
+  lista.forEach(v => { const t = String(v || '').trim(); if (t && !vistos[t.toLowerCase()]) { vistos[t.toLowerCase()] = 1; out.push(t); } });
+  return out.sort((a, b) => a.localeCompare(b, 'es'));
+}
+const ICONOS = {
+  mas:'<path d="M12 5v14M5 12h14"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  editar:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  basura:'<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>',
+  candado:'<rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  liga:'<path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/>',
+  ojo:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+  ojoNo:'<path d="M3 3l18 18"/><path d="M10.6 5.2A10 10 0 0 1 22 12s-1.3 2.3-3.7 4.1M6.3 6.7C3.7 8.5 2 12 2 12s4 7 10 7a9.7 9.7 0 0 0 4-.8"/>',
+  gente:'<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3.2 3.2 0 0 1 0 6"/><path d="M17.5 20a6.3 6.3 0 0 0-2-4.6"/>',
+  check:'<path d="M4 12.5 9.5 18 20 6"/>',
+  reloj:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+  calendario:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  flecha:'<path d="M15 18l-6-6 6-6"/>',
+  pantalla:'<rect x="2.5" y="4" width="19" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>'
+};
+function ic(n) {
+  return '<svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONOS[n] || '') + '</svg>';
 }
 
-// ---------- comunicación con la hoja ----------
+/* ------------------------------------------------------------
+   Comunicación con la hoja de cálculo (Apps Script)
+   ------------------------------------------------------------ */
+function normRes(r) {
+  return {
+    id: String(r.id == null ? '' : r.id),
+    sala_id: r.sala_id || '', fecha: r.fecha || '', inicio: r.inicio || '', fin: r.fin || '',
+    nombre: r.nombre || '', tema: r.tema || r.asunto || '', estatus: r.estatus || 'pendiente',
+    participantes: r.participantes || '', proyecto: r.proyecto || '', area: r.area || '',
+    notas: r.notas || '', link_doc: r.link_doc || '', link_admin: r.link_admin || '',
+    mostrar_proyeccion: aBool(r.mostrar_proyeccion, true),
+    mostrar_participantes: aBool(r.mostrar_participantes, true),
+    creado: r.creado || ''
+  };
+}
+function normBloqueo(b) {
+  const fechas = Array.isArray(b.fechas) ? b.fechas : String(b.fechas || '').split(',').map(s => s.trim()).filter(Boolean);
+  const dias = Array.isArray(b.dias) ? b.dias : String(b.dias || '').split(',').map(s => s.trim()).filter(Boolean);
+  return {
+    id: String(b.id == null ? '' : b.id), sala_id: b.sala_id || '', fechas: fechas,
+    inicio: b.inicio || '', fin: b.fin || '', motivo: b.motivo || '', descripcion: b.descripcion || '',
+    mostrar_tablero: aBool(b.mostrar_tablero, true), tipo: b.tipo || 'dia', mes: b.mes || '', dias: dias
+  };
+}
+function listaNombres(lista, respaldo) {
+  const nombres = unicos((lista || []).map(x => (typeof x === 'string' ? x : (x && x.nombre) || '')));
+  return nombres.length ? nombres : (respaldo || []).slice();
+}
 async function cargar() {
-  const r = await fetch(API_URL);
-  const datos = await r.json();
-  estado.salas = datos.salas;
-  estado.reservaciones = datos.reservaciones;
+  const r = await fetch(API_URL + (API_URL.indexOf('?') === -1 ? '?' : '&') + 't=' + Date.now());
+  const d = await r.json();
+  if (!d || d.ok === false) throw new Error((d && d.error) || 'Respuesta inesperada del servidor');
+  estado.backendNuevo = !!d.version;
+  estado.salas = (d.salas || []).map(s => ({ id: s.id, nombre: s.nombre, capacidad: s.capacidad }));
+  estado.reservaciones = (d.reservaciones || []).map(normRes);
+  estado.bloqueos = (d.bloqueos || []).map(normBloqueo);
+  estado.proyectos = listaNombres(d.proyectos, PROYECTOS_BASE);
+  estado.areas = listaNombres(d.areas, AREAS_BASE);
+  estado.sugeridos = unicos(estado.reservaciones.map(r => r.participantes));
+  // Con la hoja ya actualizada, los catálogos los manda el servidor (ahí se van guardando
+  // los que alguien escriba en "Otro"). Con la hoja vieja, se aprenden del historial.
+  if (!estado.backendNuevo) {
+    estado.proyectos = unicos(estado.proyectos.concat(estado.reservaciones.map(r => r.proyecto)));
+    estado.areas = unicos(estado.areas.concat(estado.reservaciones.map(r => r.area)));
+  }
+  if (!estado.salaId && estado.salas.length) estado.salaId = estado.salas[0].id;
 }
 async function enviar(cuerpo) {
   // text/plain evita la verificación previa (CORS) que Apps Script no contesta
   const r = await fetch(API_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(cuerpo) });
   return r.json();
 }
+async function enviarAdmin(cuerpo) {
+  cuerpo.clave = estado.clave;
+  const r = await enviar(cuerpo);
+  if (!r.ok) {
+    aviso(r.error || 'No se pudo guardar el cambio.');
+    if (/clave/i.test(r.error || '')) { estado.clave = ''; try { sessionStorage.removeItem('claveSalas'); } catch (e) {} }
+    return null;
+  }
+  return r;
+}
 
-// ---------- vista pública ----------
-function pintar() {
-  if (ES_ADMIN) return pintarAdmin();
-  const app = document.getElementById('app');
-  let html = '<div class="tarjetas">';
+/* ------------------------------------------------------------
+   Ocupación: reservaciones y bloqueos
+   ------------------------------------------------------------ */
+function bloqueoDeDia(salaId, fecha) {
+  return estado.bloqueos.find(b => b.sala_id === salaId && b.fechas.indexOf(fecha) !== -1 && !b.inicio && !b.fin) || null;
+}
+function bloqueosConHorario(salaId, fecha) {
+  return estado.bloqueos.filter(b => b.sala_id === salaId && b.fechas.indexOf(fecha) !== -1 && b.inicio && b.fin);
+}
+// Franjas ya apartadas de una sala en una fecha: reuniones + bloqueos por horario.
+function franjasOcupadas(salaId, fecha, excluirId) {
+  const out = [];
+  estado.reservaciones.forEach(r => {
+    if (r.sala_id !== salaId || r.fecha !== fecha || r.id === excluirId) return;
+    if (OCUPAN.indexOf(r.estatus) === -1) return;
+    const i = toMin(r.inicio); if (i === null) return;
+    const f = toMin(r.fin);
+    out.push({ ini: i, fin: f === null ? i + PASO : f, etiqueta: (r.estatus === 'pendiente' ? 'solicitud pendiente de ' : 'reunión de ') + (r.nombre || 'otra persona'), bloqueo: false });
+  });
+  bloqueosConHorario(salaId, fecha).forEach(b => {
+    const i = toMin(b.inicio), f = toMin(b.fin);
+    if (i === null || f === null) return;
+    out.push({ ini: i, fin: f, etiqueta: 'bloqueo' + (b.motivo ? ' (' + b.motivo + ')' : ''), bloqueo: true });
+  });
+  return out.sort((a, b) => a.ini - b.ini);
+}
+// Con qué se encima una reservación. Terminar justo cuando otra empieza NO cuenta.
+function conflictos(res) {
+  const ini = toMin(res.inicio);
+  if (ini === null) return [];
+  const fin = toMin(res.fin) === null ? ini + PASO : toMin(res.fin);
+  const bl = bloqueoDeDia(res.sala_id, res.fecha);
+  const out = bl ? ['un bloqueo de todo el día' + (bl.motivo ? ' (' + bl.motivo + ')' : '')] : [];
+  franjasOcupadas(res.sala_id, res.fecha, res.id).forEach(f => {
+    if (ini < f.fin && fin > f.ini) out.push(f.etiqueta + ' (' + aHora(f.ini) + '–' + aHora(f.fin) + ')');
+  });
+  return out;
+}
+function horaOcupadaInicio(ocupadas, m) { return ocupadas.some(f => m >= f.ini && m < f.fin); }
+function horaOcupadaFin(ocupadas, m) { return ocupadas.some(f => m > f.ini && m <= f.fin); }
+function opcionesHorario(ocupadas, seleccionInicio, seleccionFin) {
+  let ini = '<option value="">Selecciona…</option>', fin = '<option value="">Selecciona…</option>';
+  for (let m = HORA_MIN * 60; m <= HORA_MAX * 60; m += PASO) {
+    const v = aHora(m);
+    const oi = horaOcupadaInicio(ocupadas, m), of = horaOcupadaFin(ocupadas, m);
+    ini += '<option value="' + v + '"' + (oi ? ' disabled' : '') + (v === seleccionInicio ? ' selected' : '') + '>' + v + (oi ? ' — ocupado' : '') + '</option>';
+    fin += '<option value="' + v + '"' + (of ? ' disabled' : '') + (v === seleccionFin ? ' selected' : '') + '>' + v + (of ? ' — ocupado' : '') + '</option>';
+  }
+  return { ini: ini, fin: fin };
+}
+function urlBase() { return location.href.split('?')[0].split('#')[0]; }
+
+/* ------------------------------------------------------------
+   Piezas comunes
+   ------------------------------------------------------------ */
+function encabezadoHTML(subtitulo, acciones) {
+  return '<div class="barra-sup"><div class="interior">' +
+    '<div class="marca"><img src="' + LOGO + '" alt="ATTRAPI" id="logo-attrapi" title="Agencia de Trenes y Transporte Público Integrado">' +
+    '<div class="txt"><div class="t1">Agenda de salas</div><div class="t2">' + esc(subtitulo) + '</div></div></div>' +
+    '<div class="acciones-sup">' + (acciones || '') + '</div>' +
+    '</div></div>';
+}
+function selectConOtro(nombre, etiqueta, opciones, valor, requerido) {
+  const esOtro = valor && opciones.indexOf(valor) === -1;
+  return '<div class="campo todo"><label for="sel-' + nombre + '">' + esc(etiqueta) + '</label>' +
+    '<select id="sel-' + nombre + '" name="' + nombre + 'Select" data-otro="' + nombre + '"' + (requerido ? ' required' : '') + '>' +
+    '<option value="">Selecciona…</option>' +
+    opciones.map(o => '<option value="' + esc(o) + '"' + (o === valor ? ' selected' : '') + '>' + esc(o) + '</option>').join('') +
+    '<option value="__otro__"' + (esOtro ? ' selected' : '') + '>Otro (especificar)</option></select>' +
+    '<div id="otro-' + nombre + '"' + (esOtro ? '' : ' style="display:none"') + ' class="campo" style="margin-top:8px">' +
+    '<input name="' + nombre + 'Otro" value="' + esc(esOtro ? valor : '') + '" maxlength="90" placeholder="Escríbelo aquí y se agrega a la lista">' +
+    '</div></div>';
+}
+function valorConOtro(form, nombre) {
+  const sel = form.querySelector('[name="' + nombre + 'Select"]');
+  if (!sel) { const d = form.querySelector('[name="' + nombre + '"]'); return d ? String(d.value || '').trim() : ''; }
+  if (sel.value === '__otro__') {
+    const otro = form.querySelector('[name="' + nombre + 'Otro"]');
+    return otro ? String(otro.value || '').trim() : '';
+  }
+  return sel.value;
+}
+function campoTexto(nombre, etiqueta, valor, extra) {
+  return '<div class="campo todo"><label>' + esc(etiqueta) + '</label><input name="' + nombre + '" value="' + esc(valor || '') + '" ' + (extra || '') + '></div>';
+}
+
+/* ------------------------------------------------------------
+   VISTA PÚBLICA · salas y agenda del día
+   ------------------------------------------------------------ */
+function pintarSalas() {
+  const acciones = '<a class="btn btn-claro" href="?tablero=1" target="_blank" rel="noopener">' + ic('pantalla') + 'Tablero</a>' +
+    '<a class="btn btn-oro" href="?solicitud=1">' + ic('mas') + 'Solicitar sala</a>';
+  let html = encabezadoHTML('Subdirección de Construcción', acciones) + '<main>';
+  html += '<div class="encab-vista"><div><div class="ceja">Disponibilidad</div><h1>Salas de junta</h1>' +
+    '<div class="sub">Elige una sala para ver su agenda. Los horarios ocupados ya no se pueden solicitar.</div></div></div>';
+
+  html += '<div class="tarjetas">';
   estado.salas.forEach(s => {
+    const delDia = estado.reservaciones.filter(r => r.sala_id === s.id && r.fecha === estado.fecha && OCUPAN.indexOf(r.estatus) !== -1);
+    const bl = bloqueoDeDia(s.id, estado.fecha);
+    const chip = bl ? '<span class="ocupada">No disponible hoy</span>'
+      : delDia.length ? '<span class="ocupada">' + delDia.length + (delDia.length === 1 ? ' reunión' : ' reuniones') + '</span>'
+      : '<span class="libre">Libre</span>';
     html += '<button class="tarjeta' + (s.id === estado.salaId ? ' activa' : '') + '" data-sala="' + esc(s.id) + '">' +
-      '<h2>' + esc(s.nombre) + '</h2>' +
-      '<div class="cap">' + esc(s.capacidad) + ' <small style="font-size:15px;font-weight:400">lugares</small></div>' +
-      '<div class="chips">' + EQUIPAMIENTO.map(e => '<span>' + esc(e) + '</span>').join('') + '</div>' +
+      '<h3>' + esc(s.nombre) + '</h3>' +
+      '<div class="cap">' + esc(s.capacidad) + ' <small>lugares</small></div>' +
+      '<div class="chips">' + EQUIPAMIENTO.map(e => '<span>' + esc(e) + '</span>').join('') + chip + '</div>' +
       '</button>';
   });
   html += '</div>';
 
   if (estado.salaId) {
-    html += '<div class="panel"><div class="barra"><div><h2>' + esc(nombreSala(estado.salaId)) + '</h2>' +
-      '<span class="muted">' + esc(fechaLarga(estado.fecha)) + '</span></div>' +
-      '<div style="display:flex;gap:8px;align-items:center">' +
-      '<input type="date" id="fechaAgenda" value="' + esc(estado.fecha) + '" style="width:auto">' +
-      '<button class="principal" id="btnSolicitarSala">Solicitar esta sala</button></div></div>' +
+    const bl = bloqueoDeDia(estado.salaId, estado.fecha);
+    html += '<div class="panel" style="margin-top:18px">' +
+      '<div class="barra-herr"><div><h3>' + esc(nombreSala(estado.salaId)) + '</h3>' +
+      '<div class="desc" style="margin:0">' + esc(fechaLarga(estado.fecha)) + '</div></div>' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+      '<input type="date" id="fechaAgenda" value="' + esc(estado.fecha) + '" style="padding:8px 10px;border:1.5px solid var(--borde);border-radius:4px;font-size:13px">' +
+      '<a class="btn btn-oro" href="?solicitud=1&sala=' + encodeURIComponent(estado.salaId) + '&fecha=' + esc(estado.fecha) + '">' + ic('mas') + 'Solicitar esta sala</a>' +
+      '</div></div>' +
+      (bl ? '<div class="aviso-caja alerta">' + ic('info') + '<span><b>Esta sala no está disponible este día.</b>' +
+        (bl.motivo ? ' Motivo: ' + esc(bl.motivo) + '.' : '') + ' Elige otra fecha u otra sala.</span></div>' : '') +
       agendaHTML() +
-      '<div class="leyenda">Sólido: reunión confirmada · Rayado: solicitud por confirmar. Toca un bloque para ver el detalle.</div></div>';
-  } else {
-    html += '<p class="muted" style="margin-top:18px">Elige una sala para ver su agenda.</p>';
+      '<div class="leyenda">' +
+      '<span><i style="background:var(--vino)"></i>Confirmada</span>' +
+      '<span><i style="background:var(--st-curso)"></i>En curso</span>' +
+      '<span><i style="background:repeating-linear-gradient(45deg,#f8f0d8,#f8f0d8 5px,#efe2bb 5px,#efe2bb 10px)"></i>Por confirmar</span>' +
+      '<span><i style="background:repeating-linear-gradient(45deg,#fbeaea,#fbeaea 5px,#f4d6d4 5px,#f4d6d4 10px)"></i>Sala bloqueada</span>' +
+      '<span>Toca un bloque para ver el detalle.</span></div></div>';
   }
-  app.innerHTML = html;
+  html += '</main>';
+  document.getElementById('raiz').innerHTML = html;
 }
 
 function agendaHTML() {
-  const total = (HORA_FIN - HORA_INICIO) * 60;
+  const total = (HORA_MAX - HORA_MIN) * 60;
   let html = '<div class="agenda">';
-  for (let h = HORA_INICIO; h <= HORA_FIN; h++) {
-    html += '<div class="linea" style="top:' + ((h - HORA_INICIO) * 60 / total * 100) + '%"><span>' + String(h).padStart(2, '0') + ':00</span></div>';
+  for (let h = HORA_MIN; h <= HORA_MAX; h++) {
+    html += '<div class="linea" style="top:' + ((h - HORA_MIN) * 60 / total * 100) + '%"><span>' + String(h).padStart(2, '0') + ':00</span></div>';
   }
-  const delDia = estado.reservaciones
-    .filter(r => r.sala_id === estado.salaId && r.fecha === estado.fecha && (r.estatus === 'aceptada' || r.estatus === 'pendiente'))
-    .sort((a, b) => a.inicio.localeCompare(b.inicio));
+  const items = estado.reservaciones
+    .filter(r => r.sala_id === estado.salaId && r.fecha === estado.fecha && OCUPAN.indexOf(r.estatus) !== -1)
+    .map(r => ({ id: r.id, inicio: r.inicio, fin: r.fin, clase: r.estatus, t1: r.tema || 'Reunión', t2: r.nombre }))
+    .concat(bloqueosConHorario(estado.salaId, estado.fecha)
+      .map(b => ({ id: 'bloqueo:' + b.id, inicio: b.inicio, fin: b.fin, clase: 'bloqueo', t1: b.descripcion || 'Sala bloqueada', t2: b.motivo || '' })))
+    .sort((a, b) => String(a.inicio).localeCompare(String(b.inicio)));
 
-  // si dos solicitudes se empalman, se reparten en columnas
-  const finColumna = [];
-  delDia.forEach(r => {
-    let c = finColumna.findIndex(fin => fin <= r.inicio);
-    if (c === -1) { c = finColumna.length; finColumna.push(r.fin); } else finColumna[c] = r.fin;
+  // si dos reuniones se empalman, se reparten en columnas
+  const finCol = [];
+  items.forEach(r => {
+    let c = finCol.findIndex(fin => fin <= r.inicio);
+    if (c === -1) { c = finCol.length; finCol.push(r.fin); } else finCol[c] = r.fin;
     r._col = c;
   });
-  const cols = Math.max(finColumna.length, 1);
+  const cols = Math.max(finCol.length, 1);
 
-  delDia.forEach(r => {
-    const ini = Math.max(minutos(r.inicio) - HORA_INICIO * 60, 0);
-    const fin = Math.min(minutos(r.fin) - HORA_INICIO * 60, total);
+  items.forEach(r => {
+    const i = toMin(r.inicio), f = toMin(r.fin);
+    if (i === null) return;
+    const ini = Math.max(i - HORA_MIN * 60, 0);
+    const fin = Math.min((f === null ? i + PASO : f) - HORA_MIN * 60, total);
     if (fin <= ini) return;
-    html += '<button class="bloque ' + esc(r.estatus) + '" data-res="' + esc(r.id) + '" style="top:' + (ini / total * 100) + '%;height:calc(' + ((fin - ini) / total * 100) + '% - 2px);' +
-      'left:calc(' + (r._col / cols * 100) + '% + 6px);width:calc(' + (100 / cols) + '% - 12px)">' +
-      '<strong>' + esc(r.inicio) + '–' + esc(r.fin) + '</strong> ' + esc(r.tema) + '<br>' + esc(r.nombre) + '</button>';
+    html += '<button class="bloque ' + esc(r.clase) + '" data-res="' + esc(r.id) + '" style="top:' + (ini / total * 100) + '%;' +
+      'height:calc(' + ((fin - ini) / total * 100) + '% - 2px);left:calc(' + (r._col / cols * 100) + '% + 6px);width:calc(' + (100 / cols) + '% - 12px)">' +
+      '<strong>' + esc(r.inicio) + '–' + esc(r.fin) + '</strong>' + esc(r.t1) + (r.t2 ? '<br>' + esc(r.t2) : '') + '</button>';
   });
   return html + '</div>';
 }
 
 function modalDetalle(id) {
-  const r = estado.reservaciones.find(r => r.id === id);
-  if (!r) return;
-  document.getElementById('modal').innerHTML = '<div class="fondo-modal" data-cerrar><div class="modal">' +
-    '<h2>' + esc(nombreSala(r.sala_id)) + '</h2>' +
-    '<p><strong>Nombre:</strong> ' + esc(r.nombre) + '<br><strong>Tema:</strong> ' + esc(r.tema) + '<br>' +
-    '<strong>Horario:</strong> ' + esc(fechaLarga(r.fecha)) + ', ' + esc(r.inicio) + '–' + esc(r.fin) + '<br>' +
-    '<strong>Estatus:</strong> ' + (r.estatus === 'aceptada' ? 'Confirmada' : 'Por confirmar') + '</p>' +
-    '<div class="acciones"><button data-cerrar>Cerrar</button></div></div></div>';
+  let cuerpo = '';
+  if (id.indexOf('bloqueo:') === 0) {
+    const b = estado.bloqueos.find(b => b.id === id.slice(8));
+    if (!b) return;
+    cuerpo = '<h3>' + esc(nombreSala(b.sala_id)) + '</h3>' +
+      '<div class="dato"><b>Sala bloqueada:</b> ' + esc(b.descripcion || 'No disponible') + '</div>' +
+      (b.motivo ? '<div class="dato"><b>Motivo:</b> ' + esc(b.motivo) + '</div>' : '') +
+      '<div class="dato"><b>Horario:</b> ' + (b.inicio ? esc(b.inicio) + '–' + esc(b.fin) : 'todo el día') + '</div>';
+  } else {
+    const r = estado.reservaciones.find(r => r.id === id);
+    if (!r) return;
+    const e = ESTATUS[r.estatus] || ESTATUS.pendiente;
+    cuerpo = '<h3>' + esc(nombreSala(r.sala_id)) + '</h3>' +
+      '<div class="dato"><b>Asunto:</b> ' + esc(r.tema || '—') + '</div>' +
+      '<div class="dato"><b>Solicita:</b> ' + esc(r.nombre) + '</div>' +
+      (r.area ? '<div class="dato"><b>Área:</b> ' + esc(r.area) + '</div>' : '') +
+      (r.proyecto ? '<div class="dato"><b>Proyecto:</b> ' + esc(r.proyecto) + '</div>' : '') +
+      (r.participantes ? '<div class="dato"><b>Participantes:</b> ' + esc(r.participantes) + '</div>' : '') +
+      '<div class="dato"><b>Horario:</b> ' + esc(fechaLarga(r.fecha)) + ', ' + esc(r.inicio) + '–' + esc(r.fin) + '</div>' +
+      (r.notas ? '<div class="dato"><b>Notas:</b> ' + esc(r.notas) + '</div>' : '') +
+      (enlaceSeguro(r.link_doc) ? '<div class="dato"><a href="' + esc(enlaceSeguro(r.link_doc)) + '" target="_blank" rel="noopener">Enlace de consulta</a></div>' : '') +
+      '<div class="dato"><b>Estatus:</b> <span style="color:' + e.color + ';font-weight:700">' + esc(e.texto) + '</span></div>';
+  }
+  document.getElementById('modal').innerHTML = '<div class="fondo-modal" data-cerrar><div class="modal">' + cuerpo +
+    '<div class="acciones-form" style="justify-content:flex-end"><button class="btn" data-cerrar>Cerrar</button></div></div></div>';
 }
 
-function modalSolicitud(salaId) {
-  const opciones = estado.salas.map(s => '<option value="' + esc(s.id) + '"' + (s.id === salaId ? ' selected' : '') + '>' + esc(s.nombre) + ' (' + esc(s.capacidad) + ' lugares)</option>').join('');
-  document.getElementById('modal').innerHTML = '<div class="fondo-modal"><form class="modal" id="formSolicitud">' +
-    '<h2>Solicitar sala</h2><span class="muted">Tu solicitud queda pendiente hasta que sea aceptada.</span>' +
-    '<label>Sala</label><select name="sala_id" required>' + opciones + '</select>' +
-    '<label>Fecha</label><input type="date" name="fecha" required min="' + hoy() + '" value="' + esc(estado.fecha < hoy() ? hoy() : estado.fecha) + '">' +
-    '<div class="dos"><div><label>Inicio</label><input type="time" name="inicio" required min="09:00" max="19:00" step="900" value="09:00"></div>' +
-    '<div><label>Término</label><input type="time" name="fin" required min="09:00" max="19:00" step="900" value="10:00"></div></div>' +
-    '<label>Nombre de quien solicita</label><input name="nombre" required maxlength="80">' +
-    '<label>Tema de la reunión</label><input name="tema" required maxlength="120">' +
-    '<div class="error" id="errorForm"></div>' +
-    '<div class="acciones"><button type="button" data-cerrar>Cancelar</button><button class="principal" type="submit">Enviar solicitud</button></div></form></div>';
+/* ------------------------------------------------------------
+   VISTA PÚBLICA · formulario de solicitud  (?solicitud=1)
+   ------------------------------------------------------------ */
+function pintarSolicitud() {
+  if (estado.enviado) return pintarEnviado();
+  const salaPre = parametros.get('sala') || '';
+  const salaSel = estado.salas.find(s => s.id === salaPre);
+  const fechaPre = parametros.get('fecha');
+  if (fechaPre && !pintarSolicitud.inicializado) { estado.fecha = fechaPre; }
+  pintarSolicitud.inicializado = true;
+
+  const html = '<div class="hoja">' +
+    '<div class="hoja-encab"><img src="' + LOGO + '" alt="ATTRAPI">' +
+    '<div class="t1">Solicitar una sala</div>' +
+    '<div class="t2">Llena este formulario — el administrador revisará tu solicitud y te avisará si fue aceptada.</div></div>' +
+    (estado.backendNuevo ? '' : '<div class="aviso-caja">' + ic('info') + '<span>Tu solicitud se registra igual; algunos datos extra sólo se guardan cuando el administrador termine de actualizar la hoja de cálculo.</span></div>') +
+    '<div class="panel"><form id="formSolicitud" novalidate>' +
+    '<div class="rejilla">' +
+    campoTexto('nombre', 'Tu nombre', '', 'required maxlength="90" autocomplete="name"') +
+    campoTexto('tema', 'Asunto', '', 'required maxlength="140" placeholder="¿De qué trata la reunión?"') +
+    '<div class="campo todo"><label>Participantes</label>' +
+    '<input name="participantes" required maxlength="220" list="lista-participantes" placeholder="Nombres de quienes asistirán">' +
+    '<datalist id="lista-participantes">' + estado.sugeridos.map(s => '<option value="' + esc(s) + '"></option>').join('') + '</datalist></div>' +
+    '<div class="campo todo"><label>Fecha</label><input type="date" name="fecha" required min="' + hoyMx() + '" value="' + esc(estado.fecha < hoyMx() ? hoyMx() : estado.fecha) + '"></div>' +
+    selectConOtro('area', 'Área', estado.areas, '', true) +
+    selectConOtro('proyecto', 'Proyecto', estado.proyectos, '', true) +
+    '<div class="campo todo"><label>Sala</label><select name="sala_id" required><option value="">Selecciona…</option>' +
+    estado.salas.map(s => '<option value="' + esc(s.id) + '"' + (salaSel && salaSel.id === s.id ? ' selected' : '') + '>' + esc(s.nombre) + ' · ' + esc(s.capacidad) + ' lugares</option>').join('') +
+    '</select></div>' +
+    '<div class="campo todo" id="dispo-wrap" style="display:none"><div class="aviso-caja" id="dispo-caja" style="margin:0"></div></div>' +
+    '<div class="campo"><label>Horario de inicio</label><select name="inicio" id="sel-inicio" required><option value="">Primero elige sala y fecha…</option></select></div>' +
+    '<div class="campo"><label>Horario de término</label><select name="fin" id="sel-fin" required><option value="">Primero elige sala y fecha…</option></select></div>' +
+    '<div class="campo todo"><label>Notas</label><textarea name="notas" required rows="4" maxlength="600" placeholder="Escribe aquí tus observaciones"></textarea></div>' +
+    '<div class="campo todo"><label>Enlace de consulta</label><input name="link_doc" type="url" placeholder="https://drive.google.com/… (opcional)">' +
+    '<div class="pista">Opcional. Si hay un documento, minuta o presentación que quieras dejar a la mano.</div></div>' +
+    '</div>' +
+    '<div class="acciones-form"><button type="submit" class="btn btn-oro" id="btnEnviar">' + ic('mas') + 'Enviar solicitud</button>' +
+    '<a class="btn" href="' + urlBase() + '">Ver agenda de salas</a></div>' +
+    '<div class="error-form" id="errorForm"></div>' +
+    '</form></div>' +
+    '<div style="text-align:center;font-size:12px;color:var(--tenue)">Horario disponible: ' + HORA_MIN + ':00 a ' + HORA_MAX + ':00 h.</div>' +
+    '</div>';
+  document.getElementById('raiz').innerHTML = html;
+  actualizarDisponibilidad();
 }
 
-// ---------- vista del gestor (?admin=1) ----------
-function pintarAdmin() {
-  document.getElementById('titulo').textContent = 'Agenda de salas · Gestor';
-  document.getElementById('btnSolicitar').style.display = 'none';
-  const app = document.getElementById('app');
-  if (!estado.clave) {
-    app.innerHTML = '<form class="panel" id="formClave" style="max-width:360px"><h2>Acceso del gestor</h2>' +
-      '<label>Clave</label><input type="password" name="clave" required autofocus><div class="error" id="errorForm"></div>' +
-      '<div class="acciones"><button class="vino" type="submit">Entrar</button></div></form>';
+function pintarEnviado() {
+  document.getElementById('raiz').innerHTML = '<div class="hoja">' +
+    '<div class="hoja-encab"><img src="' + LOGO + '" alt="ATTRAPI"></div>' +
+    '<div class="panel"><div class="exito"><div class="t1">¡Solicitud enviada!</div>' +
+    '<div class="t2">El administrador la revisará. Mientras tanto aparece como <b>por confirmar</b> en la agenda de la sala.</div>' +
+    '<div class="acciones-form" style="justify-content:center;margin-top:18px">' +
+    '<a class="btn btn-vino" href="' + urlBase() + '">Ver agenda de salas</a>' +
+    '<a class="btn" href="?solicitud=1">Hacer otra solicitud</a></div></div></div></div>';
+}
+
+// Aviso de horarios ocupados + armado de los menús de horario del formulario público.
+function actualizarDisponibilidad() {
+  const form = document.getElementById('formSolicitud');
+  if (!form) return;
+  const salaId = form.sala_id.value, fecha = form.fecha.value;
+  const wrap = document.getElementById('dispo-wrap'), caja = document.getElementById('dispo-caja');
+  const selI = document.getElementById('sel-inicio'), selF = document.getElementById('sel-fin');
+  if (!salaId || !fecha) {
+    wrap.style.display = 'none';
+    selI.innerHTML = selF.innerHTML = '<option value="">Primero elige sala y fecha…</option>';
     return;
   }
-  const orden = (a, b) => (a.fecha + a.inicio).localeCompare(b.fecha + b.inicio);
-  const pendientes = estado.reservaciones.filter(r => r.estatus === 'pendiente').sort(orden);
-  const aceptadas = estado.reservaciones.filter(r => r.estatus === 'aceptada' && r.fecha >= hoy()).sort(orden);
-
-  const tabla = (lista, botones) => lista.length === 0 ? '<p class="muted">No hay registros.</p>' :
-    '<div class="tabla-scroll"><table><tr><th>Fecha / horario</th><th>Sala</th><th>Solicita</th><th>Tema</th><th></th></tr>' +
-    lista.map(r => '<tr><td><strong>' + esc(r.fecha) + '</strong><br>' + esc(r.inicio) + '–' + esc(r.fin) + '</td><td>' + esc(nombreSala(r.sala_id)) +
-      '</td><td>' + esc(r.nombre) + '</td><td>' + esc(r.tema) + '</td><td style="white-space:nowrap">' + botones(r) + '</td></tr>').join('') + '</table></div>';
-
-  app.innerHTML =
-    '<div class="panel"><h2>Solicitudes pendientes (' + pendientes.length + ')</h2>' +
-    tabla(pendientes, r => '<button class="vino" data-estatus="aceptada" data-id="' + esc(r.id) + '">Aceptar</button> <button class="peligro" data-estatus="rechazada" data-id="' + esc(r.id) + '">Rechazar</button>') + '</div>' +
-    '<div class="panel"><h2>Reuniones confirmadas (de hoy en adelante)</h2>' +
-    tabla(aceptadas, r => '<button class="peligro" data-estatus="cancelada" data-id="' + esc(r.id) + '">Cancelar</button>') + '</div>';
+  const bl = bloqueoDeDia(salaId, fecha);
+  if (bl) {
+    wrap.style.display = '';
+    caja.className = 'aviso-caja alerta';
+    caja.innerHTML = ic('info') + '<span><b>Esta sala no está disponible ese día.</b>' + (bl.motivo ? ' Motivo: ' + esc(bl.motivo) + '.' : '') + ' Elige otra fecha o sala.</span>';
+    selI.innerHTML = selF.innerHTML = '<option value="">No disponible este día</option>';
+    return;
+  }
+  const ocupadas = franjasOcupadas(salaId, fecha);
+  if (ocupadas.length) {
+    wrap.style.display = '';
+    caja.className = 'aviso-caja';
+    caja.innerHTML = ic('reloj') + '<span><b>Horarios ya ocupados en esta sala, en esta fecha:</b><br>' +
+      ocupadas.map(f => aHora(f.ini) + ' – ' + aHora(f.fin) + (f.bloqueo ? ' (bloqueado)' : ' (ya reservado)')).join(' · ') + '</span>';
+  } else {
+    wrap.style.display = '';
+    caja.className = 'aviso-caja';
+    caja.innerHTML = ic('check') + '<span>La sala está libre todo el día en esa fecha.</span>';
+  }
+  const ops = opcionesHorario(ocupadas, selI.value, selF.value);
+  selI.innerHTML = ops.ini; selF.innerHTML = ops.fin;
 }
 
-// ---------- eventos ----------
+async function enviarSolicitud(form) {
+  const err = document.getElementById('errorForm'), boton = document.getElementById('btnEnviar');
+  const falla = m => { err.textContent = m; err.style.display = 'block'; boton.disabled = false; boton.innerHTML = ic('mas') + 'Enviar solicitud'; };
+  err.style.display = 'none';
+  if (!form.checkValidity()) { form.reportValidity(); return; }
+  const d = Object.fromEntries(new FormData(form).entries());
+  const area = valorConOtro(form, 'area'), proyecto = valorConOtro(form, 'proyecto');
+  if (!area) return falla('Falta indicar el área.');
+  if (!proyecto) return falla('Falta indicar el proyecto.');
+  if (d.fecha < hoyMx()) return falla('Esa fecha ya pasó. Elige el día de hoy o una fecha próxima.');
+  const link = String(d.link_doc || '').trim();
+  if (link && !enlaceSeguro(link)) return falla('El enlace de consulta debe empezar con https:// (o déjalo vacío).');
+  const i = toMin(d.inicio), f = toMin(d.fin);
+  if (i === null || f === null) return falla('Falta elegir el horario de inicio y de término.');
+  if (i >= f) return falla('El horario de término debe ser después del horario de inicio.');
+  if (bloqueoDeDia(d.sala_id, d.fecha)) return falla('Esa sala no está disponible en esa fecha. Elige otra fecha o sala.');
+  const choque = franjasOcupadas(d.sala_id, d.fecha).some(fr => i < fr.fin && f > fr.ini);
+  if (choque) return falla('Ese horario ya está ocupado en esta sala — elige otro, o revisa arriba los horarios ya tomados.');
+
+  boton.disabled = true; boton.innerHTML = 'Enviando…';
+  try {
+    const r = await enviar({
+      accion:'solicitar', sala_id:d.sala_id, fecha:d.fecha, inicio:d.inicio, fin:d.fin,
+      nombre:String(d.nombre).trim(), tema:String(d.tema).trim(), participantes:String(d.participantes || '').trim(),
+      area:area, proyecto:proyecto, notas:String(d.notas || '').trim(), link_doc:enlaceSeguro(link)
+    });
+    if (!r.ok) return falla(r.error || 'No se pudo registrar la solicitud.');
+    estado.enviado = true;
+    pintarEnviado();
+  } catch (e) {
+    falla('No se pudo confirmar el envío (el servidor tardó demasiado). Espera un momento y revisa si tu solicitud ya aparece en la agenda antes de volver a intentarlo, para no mandarla dos veces.');
+  }
+}
+
+/* ------------------------------------------------------------
+   TABLERO · filas compartidas por el panel y la proyección
+   ------------------------------------------------------------ */
+function filasTablero(gestionable) {
+  const bloqueosFila = estado.bloqueos
+    .filter(b => gestionable || b.mostrar_tablero)
+    .reduce((acc, b) => acc.concat(b.fechas.map(f => ({ esBloqueo:true, bloqueoId:b.id, sala_id:b.sala_id, fecha:f, inicio:b.inicio, fin:b.fin, motivo:b.motivo, descripcion:b.descripcion, mostrar_tablero:b.mostrar_tablero }))), []);
+  let lista = estado.reservaciones
+    .filter(r => EN_TABLERO.indexOf(r.estatus) !== -1 && (gestionable || r.mostrar_proyeccion))
+    .concat(bloqueosFila);
+  if (gestionable) {
+    if (estado.desde) lista = lista.filter(r => r.fecha >= estado.desde);
+    if (estado.hasta) lista = lista.filter(r => r.fecha <= estado.hasta);
+  } else {
+    const hoy = hoyMx();
+    lista = lista.filter(r => r.fecha >= hoy);
+  }
+  lista.sort((a, b) => (a.fecha + (a.inicio || '')).localeCompare(b.fecha + (b.inicio || '')));
+
+  if (!lista.length) {
+    return '<div class="fila"><div class="vacio">' +
+      ((gestionable && (estado.desde || estado.hasta)) ? 'No hay reuniones en ese rango de fechas.' : 'No hay reuniones programadas por el momento.') +
+      '</div></div>';
+  }
+  return lista.map(r => {
+    const horario = (r.inicio || r.fin) ? esc(r.inicio || '—') + ' – ' + esc(r.fin || '—') : 'Todo el día';
+    if (r.esBloqueo) {
+      return '<div class="fila bloqueada">' +
+        '<div class="celda hora" data-et="Fecha / horario">' + esc(fmtFecha(r.fecha)) + '<br>' + horario + '</div>' +
+        '<div class="celda sala" data-et="Sala">' + esc(nombreSala(r.sala_id)) + '</div>' +
+        '<div class="celda" data-et="Área">—</div>' +
+        '<div class="celda" data-et="Asunto">' + esc(r.descripcion || 'Sala bloqueada') +
+          (r.motivo ? '<div class="sub-dato">' + ic('info') + esc(r.motivo) + '</div>' : '') + '</div>' +
+        '<div class="celda" data-et="Proyecto">—</div>' +
+        '<div class="celda estatus" data-et="Estatus"><span style="color:var(--st-cancelada);border-color:var(--st-cancelada)">BLOQUEADA</span>' +
+          (gestionable ? '<div class="sub-dato">' + ic('info') + 'Se administra abajo, en “Bloquear fechas”.</div>' : '') + '</div>' +
+        '</div>';
+    }
+    const e = ESTATUS[r.estatus] || ESTATUS.aceptada;
+    const gestion = gestionable ? '<div class="celda gestion" data-et="Cambiar">' +
+      '<select data-estatus-de="' + esc(r.id) + '" aria-label="Cambiar estatus">' +
+      ['aceptada','en_curso','concluida','cancelada'].map(k => '<option value="' + k + '"' + (r.estatus === k ? ' selected' : '') + '>' + ESTATUS[k].etiqueta.charAt(0) + ESTATUS[k].etiqueta.slice(1).toLowerCase() + '</option>').join('') +
+      '</select>' +
+      '<button class="btn-icono" data-proyeccion="' + esc(r.id) + '" title="' + (r.mostrar_proyeccion ? 'Se ve en la proyección. Clic para ocultarla.' : 'Oculta en la proyección. Clic para mostrarla.') + '">' + ic(r.mostrar_proyeccion ? 'ojo' : 'ojoNo') + '</button>' +
+      '<button class="btn-icono" data-editar="' + esc(r.id) + '" title="Editar">' + ic('editar') + '</button>' +
+      '<button class="btn-icono peligro" data-borrar="' + esc(r.id) + '" title="Eliminar">' + ic('basura') + '</button>' +
+      '</div>' : '';
+    const verParticipantes = r.mostrar_participantes && r.participantes;
+    return '<div class="fila">' +
+      '<div class="celda hora" data-et="Fecha / horario">' + esc(fmtFecha(r.fecha)) + '<br>' + horario + '</div>' +
+      '<div class="celda sala" data-et="Sala">' + esc(nombreSala(r.sala_id)) + '</div>' +
+      '<div class="celda" data-et="Área">' + esc(r.area || '—') + '</div>' +
+      '<div class="celda" data-et="Asunto">' + esc(r.tema || '—') +
+        (verParticipantes ? '<div class="sub-dato">' + ic('gente') + esc(r.participantes) + '</div>' : '') +
+        (gestionable && r.nombre ? '<div class="sub-dato">' + ic('info') + 'Solicitó: ' + esc(r.nombre) + '</div>' : '') +
+        (gestionable && r.notas ? '<div class="sub-dato">' + ic('info') + esc(r.notas) + '</div>' : '') +
+        (enlaceSeguro(r.link_doc) ? '<div class="sub-dato">' + ic('liga') + '<a href="' + esc(enlaceSeguro(r.link_doc)) + '" target="_blank" rel="noopener" style="color:inherit">Enlace de consulta</a></div>' : '') +
+        (gestionable && enlaceSeguro(r.link_admin) ? '<div class="sub-dato">' + ic('candado') + '<a href="' + esc(enlaceSeguro(r.link_admin)) + '" target="_blank" rel="noopener" style="color:inherit">Enlace personal</a></div>' : '') +
+      '</div>' +
+      '<div class="celda" data-et="Proyecto">' + esc(r.proyecto || '—') + '</div>' +
+      '<div class="celda estatus" data-et="Estatus"><span style="color:' + e.color + ';border-color:' + e.color + '">' + e.etiqueta + '</span>' +
+        (gestionable && !r.mostrar_proyeccion ? '<div class="sub-dato">' + ic('ojoNo') + 'Oculta en proyección</div>' : '') + '</div>' +
+      gestion +
+      '</div>';
+  }).join('');
+}
+function encabezadoTablero(gestionable) {
+  return '<div class="fila encabezado">' +
+    '<div class="celda">Fecha / Horario</div><div class="celda">Sala</div><div class="celda">Área</div>' +
+    '<div class="celda">Asunto</div><div class="celda">Proyecto</div><div class="celda">Estatus</div>' +
+    (gestionable ? '<div class="celda">Cambiar</div>' : '') + '</div>';
+}
+
+/* ------------------------------------------------------------
+   VISTA PROYECCIÓN  (?tablero=1)
+   ------------------------------------------------------------ */
+function pintarKiosko() {
+  document.getElementById('raiz').innerHTML = '<div class="kiosko">' +
+    '<div class="kiosko-logos"><img src="' + LOGO + '" alt="ATTRAPI"></div>' +
+    '<div class="kiosko-encab"><div class="kiosko-tit">Agenda de salas</div><div class="kiosko-reloj" id="reloj"></div></div>' +
+    '<div class="tablero-marco">' + encabezadoTablero(false) + filasTablero(false) + '</div>' +
+    '<div class="kiosko-pie">La pantalla se actualiza sola cada 20 segundos.</div>' +
+    '</div>';
+  actualizarReloj();
+}
+function actualizarReloj() {
+  const el = document.getElementById('reloj');
+  if (!el) return;
+  try {
+    el.textContent = capitalizar(new Date().toLocaleString('es-MX', { timeZone: ZONA, weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' }));
+  } catch (e) {
+    el.textContent = capitalizar(new Date().toLocaleString('es-MX', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' }));
+  }
+}
+
+/* ------------------------------------------------------------
+   PANEL DE ADMINISTRACIÓN  (?admin=1 o acceso escondido)
+   ------------------------------------------------------------ */
+function pintarAdmin() {
+  if (!estado.clave) return pintarAccesoAdmin();
+  const pendientes = estado.reservaciones.filter(r => r.estatus === 'pendiente')
+    .sort((a, b) => (a.fecha + a.inicio).localeCompare(b.fecha + b.inicio));
+  const rechazadas = estado.reservaciones.filter(r => r.estatus === 'rechazada')
+    .sort((a, b) => (b.fecha + b.inicio).localeCompare(a.fecha + a.inicio));
+  const urlPublica = urlBase() + '?solicitud=1';
+  const urlTablero = urlBase() + '?tablero=1';
+
+  const acciones = '<a class="btn btn-claro" href="' + urlBase() + '">Ver agenda pública</a>' +
+    '<button class="btn btn-claro" id="btnSalir">Cerrar sesión</button>';
+
+  let html = encabezadoHTML('Panel de administración', acciones) + '<main>' +
+    '<div class="encab-vista"><div><div class="ceja">Administración</div><h1>Agenda de salas</h1>' +
+    '<div class="sub">' + pendientes.length + ' solicitud' + (pendientes.length === 1 ? '' : 'es') + ' pendiente' + (pendientes.length === 1 ? '' : 's') + ' · ' +
+    estado.reservaciones.filter(r => EN_TABLERO.indexOf(r.estatus) !== -1).length + ' en el tablero</div></div>' +
+    '<div class="acciones-sup"><button class="btn btn-oro" id="btnNueva">' + ic('mas') + 'Agregar reunión</button></div></div>';
+
+  if (!estado.backendNuevo) {
+    html += '<div class="aviso-caja alerta">' + ic('info') + '<span><b>Falta actualizar la hoja de cálculo.</b> ' +
+      'Pega el archivo <code>apps-script/Codigo.gs</code> en tu proyecto de Apps Script y vuelve a implementar. ' +
+      'Mientras no lo hagas, sólo funcionan aceptar, rechazar y cambiar estatus: editar, eliminar, los bloqueos y los catálogos no se van a guardar.</span></div>';
+  }
+  html += '<div class="aviso-caja">' + ic('liga') + '<span>Enlace para quien quiera pedir una sala (no necesita usuario ni contraseña): ' +
+    '<a href="' + esc(urlPublica) + '" target="_blank" rel="noopener"><b>' + esc(urlPublica) + '</b></a></span></div>' +
+    '<div class="aviso-caja">' + ic('pantalla') + '<span>Para proyectar la agenda en una pantalla (se actualiza sola, sin menús ni contraseña): ' +
+    '<a href="' + esc(urlTablero) + '" target="_blank" rel="noopener"><b>' + esc(urlTablero) + '</b></a></span></div>';
+
+  if (estado.formAbierto === 'reservacion') html += formReservacionHTML();
+
+  // --- Solicitudes pendientes ---
+  html += '<div class="panel"><h3>Solicitudes pendientes</h3><div class="desc">Acepta o rechaza cada solicitud que llegue.</div>';
+  html += pendientes.length ? pendientes.map(r => {
+    const ch = conflictos(r);
+    return '<div class="sol-card"><div>' +
+      '<div class="tit">' + esc(nombreSala(r.sala_id)) + ' · ' + esc(fmtFecha(r.fecha)) + ' · ' + esc(r.inicio) + ' – ' + esc(r.fin) + '</div>' +
+      (ch.length ? '<div class="choque">' + ic('info') + '<span>Ojo: se encima con ' + esc(ch.join('; ')) + '.</span></div>' : '') +
+      '<div class="dato"><b>Solicita:</b> ' + esc(r.nombre) + (r.area ? ' · <b>Área:</b> ' + esc(r.area) : '') + (r.proyecto ? ' · <b>Proyecto:</b> ' + esc(r.proyecto) : '') + '</div>' +
+      (r.tema ? '<div class="dato"><b>Asunto:</b> ' + esc(r.tema) + '</div>' : '') +
+      (r.participantes ? '<div class="dato"><b>Participantes:</b> ' + esc(r.participantes) + '</div>' : '') +
+      (r.notas ? '<div class="dato"><b>Notas:</b> ' + esc(r.notas) + '</div>' : '') +
+      (enlaceSeguro(r.link_doc) ? '<div class="dato"><a href="' + esc(enlaceSeguro(r.link_doc)) + '" target="_blank" rel="noopener">Enlace de consulta</a></div>' : '') +
+      (r.creado ? '<div class="dato" style="color:var(--tenue)">Recibida: ' + esc(r.creado) + '</div>' : '') +
+      '</div><div class="sol-acciones">' +
+      '<button class="btn btn-verde" data-aceptar="' + esc(r.id) + '">' + ic('check') + 'Aceptar</button>' +
+      '<button class="btn btn-peligro" data-rechazar="' + esc(r.id) + '">Rechazar</button>' +
+      '<button class="btn-icono" data-editar="' + esc(r.id) + '" title="Editar">' + ic('editar') + '</button>' +
+      '<button class="btn-icono peligro" data-borrar="' + esc(r.id) + '" title="Eliminar">' + ic('basura') + '</button>' +
+      '</div></div>';
+  }).join('') : '<div class="desc" style="margin:0">No hay solicitudes pendientes.</div>';
+  html += '</div>';
+
+  // --- Tablero ---
+  html += '<div class="panel"><h3>Tablero de salas</h3><div class="desc">Actualiza el estatus de cada reunión aceptada. El ojo decide si se ve en la pantalla de proyección.</div>' +
+    '<form id="formFiltro" style="display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap">' +
+    '<div class="campo"><label>Desde</label><input type="date" name="desde" value="' + esc(estado.desde) + '"></div>' +
+    '<div class="campo"><label>Hasta</label><input type="date" name="hasta" value="' + esc(estado.hasta) + '"></div>' +
+    '<button class="btn btn-vino" type="submit">Filtrar</button>' +
+    (estado.desde || estado.hasta ? '<button class="btn" type="button" id="btnQuitarFiltro">Quitar filtro</button>' : '') +
+    '</form>' +
+    '<div class="tablero-marco con-gestion">' + encabezadoTablero(true) + filasTablero(true) + '</div></div>';
+
+  // --- Rechazadas ---
+  if (rechazadas.length) {
+    html += '<div class="panel"><h3>Rechazadas</h3><div class="desc">Historial de solicitudes que no se aceptaron.</div>' +
+      rechazadas.map(r => '<div class="fila-lista"><span>' + esc(nombreSala(r.sala_id)) + ' · ' + esc(fmtFecha(r.fecha)) + ' ' + esc(r.inicio) + '–' + esc(r.fin) + ' — ' + esc(r.nombre) + (r.tema ? ' — ' + esc(r.tema) : '') + '</span>' +
+        '<span class="acc"><button class="btn-icono" data-reactivar="' + esc(r.id) + '" title="Volver a pendiente">' + ic('flecha') + '</button>' +
+        '<button class="btn-icono peligro" data-borrar="' + esc(r.id) + '" title="Eliminar">' + ic('basura') + '</button></span></div>').join('') +
+      '</div>';
+  }
+
+  // --- Bloqueos ---
+  html += panelBloqueosHTML();
+
+  // --- Catálogos ---
+  html += '<div class="panel"><h3>Catálogos</h3><div class="desc">Las salas, áreas y proyectos que aparecen en el formulario. Lo que alguien escriba en “Otro” se agrega solo.</div>' +
+    '<div class="rejilla">' +
+    catalogoHTML('salas', 'Salas', estado.salas.map(s => ({ id:s.id, nombre:s.nombre + ' · ' + s.capacidad + ' lugares' }))) +
+    catalogoHTML('areas', 'Áreas', estado.areas.map(n => ({ id:n, nombre:n }))) +
+    catalogoHTML('proyectos', 'Proyectos', estado.proyectos.map(n => ({ id:n, nombre:n }))) +
+    '</div></div>';
+
+  html += '</main>';
+  document.getElementById('raiz').innerHTML = html;
+  if (estado.formAbierto === 'reservacion') actualizarHorarioAdmin();
+}
+
+function pintarAccesoAdmin() {
+  document.getElementById('raiz').innerHTML = '<div class="hoja" style="max-width:420px">' +
+    '<div class="hoja-encab"><img src="' + LOGO + '" alt="ATTRAPI">' +
+    '<div class="t1">Acceso del administrador</div>' +
+    '<div class="t2">Esta pantalla sólo la usa quien administra las salas.</div></div>' +
+    '<div class="panel"><form id="formClave">' +
+    '<div class="campo"><label>Clave</label><input type="password" name="clave" required autofocus autocomplete="current-password"></div>' +
+    '<div class="acciones-form"><button class="btn btn-vino" type="submit">Entrar</button>' +
+    '<a class="btn" href="' + urlBase() + '">Volver</a></div>' +
+    '<div class="error-form" id="errorForm"></div>' +
+    '</form></div></div>';
+}
+
+/* ---------- Formulario de alta/edición (admin) ---------- */
+function formReservacionHTML() {
+  const r = estado.editandoId ? estado.reservaciones.find(x => x.id === estado.editandoId) : null;
+  const d = r || { sala_id: estado.salas.length ? estado.salas[0].id : '', fecha: hoyMx(), inicio:'', fin:'', nombre:'', tema:'', participantes:'', area:'', proyecto:'', notas:'', link_doc:'', link_admin:'', estatus:'aceptada', mostrar_proyeccion:true, mostrar_participantes:true };
+  return '<div class="panel"><h3>' + (r ? 'Editar reunión' : 'Agregar reunión') + '</h3>' +
+    '<div class="desc">' + (r ? 'Los cambios se guardan en la hoja de cálculo.' : 'Para apuntar una reunión directamente, sin pasar por el formulario público.') + '</div>' +
+    '<form id="formReservacion" novalidate><div class="rejilla">' +
+    campoTexto('nombre', 'Nombre de quien solicita', d.nombre, 'required maxlength="90"') +
+    campoTexto('tema', 'Asunto', d.tema, 'required maxlength="140"') +
+    '<div class="campo todo"><label>Participantes</label><input name="participantes" maxlength="220" list="lista-participantes" value="' + esc(d.participantes) + '">' +
+    '<datalist id="lista-participantes">' + estado.sugeridos.map(s => '<option value="' + esc(s) + '"></option>').join('') + '</datalist></div>' +
+    selectConOtro('area', 'Área', estado.areas, d.area, false) +
+    selectConOtro('proyecto', 'Proyecto', estado.proyectos, d.proyecto, false) +
+    '<div class="campo todo"><label>Sala</label><select name="sala_id" id="admin-sala" required>' +
+    estado.salas.map(s => '<option value="' + esc(s.id) + '"' + (s.id === d.sala_id ? ' selected' : '') + '>' + esc(s.nombre) + '</option>').join('') + '</select></div>' +
+    '<div class="campo"><label>Fecha</label><input type="date" name="fecha" id="admin-fecha" required value="' + esc(d.fecha) + '"></div>' +
+    '<div class="campo"><label>Estatus</label><select name="estatus">' +
+    ['pendiente','aceptada','en_curso','concluida','cancelada','rechazada'].map(k => '<option value="' + k + '"' + (d.estatus === k ? ' selected' : '') + '>' + ESTATUS[k].texto + '</option>').join('') +
+    '</select></div>' +
+    '<div class="campo"><label>Horario de inicio</label><select name="inicio" id="admin-inicio" required></select></div>' +
+    '<div class="campo"><label>Horario de término</label><select name="fin" id="admin-fin" required></select></div>' +
+    '<div class="campo todo" id="admin-dispo"></div>' +
+    '<div class="campo todo"><label>Notas</label><textarea name="notas" rows="3" maxlength="600">' + esc(d.notas) + '</textarea></div>' +
+    '<div class="campo todo"><label>Enlace de consulta</label><input name="link_doc" type="url" value="' + esc(d.link_doc) + '" placeholder="https://… (opcional)"></div>' +
+    '<div class="campo todo"><label>Enlace personal (sólo lo ves tú)</label><input name="link_admin" type="url" value="' + esc(d.link_admin) + '" placeholder="https://… (opcional, no aparece en el formulario público)"></div>' +
+    '<div class="campo todo"><label class="marca-check"><input type="checkbox" name="mostrar_proyeccion"' + (d.mostrar_proyeccion ? ' checked' : '') + '> Mostrar esta reunión en la pantalla de proyección</label>' +
+    '<label class="marca-check" style="margin-top:8px"><input type="checkbox" name="mostrar_participantes"' + (d.mostrar_participantes ? ' checked' : '') + '> Mostrar los participantes en la proyección</label></div>' +
+    '</div><div class="acciones-form"><button class="btn btn-oro" type="submit">' + ic('check') + 'Guardar</button>' +
+    '<button class="btn" type="button" id="btnCancelarForm">Cancelar</button></div>' +
+    '<div class="error-form" id="errorForm"></div></form></div>';
+}
+// Los menús de horario del panel: igual que en el formulario público, pero sin contarse a sí misma.
+function actualizarHorarioAdmin() {
+  const form = document.getElementById('formReservacion');
+  if (!form) return;
+  const r = estado.editandoId ? estado.reservaciones.find(x => x.id === estado.editandoId) : null;
+  const salaId = form.sala_id.value, fecha = form.fecha.value;
+  const selI = document.getElementById('admin-inicio'), selF = document.getElementById('admin-fin');
+  const ocupadas = franjasOcupadas(salaId, fecha, estado.editandoId);
+  const ops = opcionesHorario(ocupadas, selI.value || (r ? r.inicio : ''), selF.value || (r ? r.fin : ''));
+  selI.innerHTML = ops.ini; selF.innerHTML = ops.fin;
+  // En el panel sí se puede elegir un horario ocupado (a veces hace falta); sólo se avisa.
+  [selI, selF].forEach(sel => Array.prototype.forEach.call(sel.options, o => { o.disabled = false; }));
+  const caja = document.getElementById('admin-dispo');
+  const bl = bloqueoDeDia(salaId, fecha);
+  caja.innerHTML = (ocupadas.length || bl)
+    ? '<div class="aviso-caja" style="margin:0">' + ic('reloj') + '<span>' + (bl ? '<b>Hay un bloqueo de todo el día' + (bl.motivo ? ' (' + esc(bl.motivo) + ')' : '') + '.</b> ' : '') +
+      (ocupadas.length ? 'Ya apartado: ' + ocupadas.map(f => aHora(f.ini) + '–' + aHora(f.fin)).join(' · ') : '') + '</span></div>'
+    : '';
+}
+
+/* ---------- Bloqueos ---------- */
+const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+function panelBloqueosHTML() {
+  let html = '<div class="panel"><div class="barra-herr"><div><h3>Bloquear fechas</h3>' +
+    '<div class="desc" style="margin:0">Aparta una sala por un día completo, por un horario, o por mes (por ejemplo, todos los jueves). Nadie puede solicitarla en esas fechas.</div></div>' +
+    (estado.formAbierto === 'bloqueo' ? '' : '<button class="btn btn-vino" id="btnNuevoBloqueo">' + ic('mas') + 'Agregar bloqueo</button>') + '</div>';
+
+  if (estado.formAbierto === 'bloqueo') {
+    const b = estado.editandoItem || { id:'', sala_id: estado.salas.length ? estado.salas[0].id : '', tipo:'dia', mes:'', dias:[], fechas:[], inicio:'', fin:'', motivo:'', descripcion:'', mostrar_tablero:true };
+    const esMes = b.tipo === 'mes';
+    html += '<form id="formBloqueo" novalidate style="border:1px solid var(--borde);border-radius:4px;padding:16px;margin-bottom:14px"><div class="rejilla">' +
+      '<div class="campo todo"><label>Sala</label><select name="sala_id" required>' +
+      estado.salas.map(s => '<option value="' + esc(s.id) + '"' + (s.id === b.sala_id ? ' selected' : '') + '>' + esc(s.nombre) + '</option>').join('') + '</select></div>' +
+      '<div class="campo todo"><label>Tipo de bloqueo</label><div style="display:flex;gap:18px;flex-wrap:wrap">' +
+      '<label class="marca-check"><input type="radio" name="tipo" value="dia"' + (esMes ? '' : ' checked') + '> Por un solo día</label>' +
+      '<label class="marca-check"><input type="radio" name="tipo" value="mes"' + (esMes ? ' checked' : '') + '> Por mes (días de la semana)</label>' +
+      '</div></div>' +
+      '<div class="campo todo" id="bloq-dia"' + (esMes ? ' style="display:none"' : '') + '><label>Fecha</label><input type="date" name="fecha" value="' + esc(b.fechas[0] || '') + '"></div>' +
+      '<div class="campo todo" id="bloq-mes"' + (esMes ? '' : ' style="display:none"') + '><label>Mes</label><input type="month" name="mes" value="' + esc(b.mes) + '">' +
+      '<label style="margin-top:10px">Días de la semana</label><div style="display:flex;gap:12px;flex-wrap:wrap">' +
+      DIAS_SEMANA.map((d, i) => '<label class="marca-check"><input type="checkbox" name="dia" value="' + i + '"' + (b.dias.indexOf(String(i)) !== -1 ? ' checked' : '') + '> ' + d + '</label>').join('') +
+      '</div></div>' +
+      '<div class="campo todo"><label class="marca-check"><input type="checkbox" name="todoDia" id="bloq-todo"' + (b.inicio ? '' : ' checked') + '> Bloquear todo el día</label></div>' +
+      '<div class="campo"><label>Desde</label><input type="time" name="inicio" step="1800" value="' + esc(b.inicio) + '"' + (b.inicio ? '' : ' disabled') + '></div>' +
+      '<div class="campo"><label>Hasta</label><input type="time" name="fin" step="1800" value="' + esc(b.fin) + '"' + (b.inicio ? '' : ' disabled') + '></div>' +
+      campoTexto('motivo', 'Motivo (corto)', b.motivo, 'maxlength="60" placeholder="Mantenimiento, evento…"') +
+      campoTexto('descripcion', 'Cómo se ve en el tablero', b.descripcion, 'maxlength="90" placeholder="Sala bloqueada"') +
+      '<div class="campo todo"><label class="marca-check"><input type="checkbox" name="mostrar_tablero"' + (b.mostrar_tablero ? ' checked' : '') + '> Mostrar este bloqueo en la pantalla de proyección</label></div>' +
+      '</div><div class="acciones-form"><button class="btn btn-oro" type="submit">' + ic('check') + 'Guardar bloqueo</button>' +
+      '<button class="btn" type="button" id="btnCancelarForm">Cancelar</button></div>' +
+      '<div class="error-form" id="errorForm"></div></form>';
+  }
+
+  html += estado.bloqueos.length ? estado.bloqueos.map(b =>
+    '<div class="fila-lista"><span><b>' + esc(nombreSala(b.sala_id)) + '</b> · ' +
+    (b.inicio ? esc(b.inicio) + '–' + esc(b.fin) : 'todo el día') + ' · ' +
+    (b.fechas.length > 3 ? b.fechas.length + ' fechas (' + esc(fmtFecha(b.fechas[0])) + ' …)' : b.fechas.map(f => esc(fmtFecha(f))).join(', ')) +
+    (b.motivo ? ' · ' + esc(b.motivo) : '') + '</span>' +
+    '<span class="acc"><button class="btn-icono" data-editar-bloqueo="' + esc(b.id) + '" title="Editar">' + ic('editar') + '</button>' +
+    '<button class="btn-icono peligro" data-borrar-bloqueo="' + esc(b.id) + '" title="Eliminar">' + ic('basura') + '</button></span></div>').join('')
+    : '<div class="desc" style="margin:0">No hay bloqueos registrados.</div>';
+  return html + '</div>';
+}
+// Un bloqueo "por mes" se guarda como la lista de fechas concretas que cubre.
+function fechasDelMes(mes, dias) {
+  const p = String(mes || '').split('-');
+  if (p.length !== 2) return [];
+  const anio = Number(p[0]), m = Number(p[1]);
+  const out = [], ultimo = new Date(anio, m, 0).getDate();
+  for (let d = 1; d <= ultimo; d++) {
+    const f = new Date(anio, m - 1, d);
+    if (dias.indexOf(String(f.getDay())) !== -1) out.push(p[0] + '-' + p[1] + '-' + String(d).padStart(2, '0'));
+  }
+  return out;
+}
+
+/* ---------- Catálogos ---------- */
+function catalogoHTML(lista, titulo, items) {
+  const abierto = estado.formAbierto === 'cat:' + lista;
+  const editando = abierto ? estado.editandoItem : null;
+  let html = '<div class="campo todo" style="border:1px solid var(--borde);border-radius:4px;padding:14px">' +
+    '<div class="barra-herr" style="margin-bottom:8px"><h4 style="font-size:14px">' + esc(titulo) + '</h4>' +
+    (abierto ? '' : '<button class="btn" data-nuevo-cat="' + lista + '">' + ic('mas') + 'Agregar</button>') + '</div>';
+  if (abierto) {
+    html += '<form id="formCatalogo" data-lista="' + lista + '" novalidate style="margin-bottom:10px">' +
+      '<div class="campo"><label>Nombre</label><input name="nombre" required maxlength="90" value="' + esc(editando ? editando.nombre : '') + '" autofocus></div>' +
+      (lista === 'salas' ? '<div class="campo" style="margin-top:8px"><label>Capacidad (lugares)</label><input name="capacidad" type="number" min="1" max="500" value="' + esc(editando ? editando.capacidad : '') + '"></div>' : '') +
+      '<input type="hidden" name="id" value="' + esc(editando ? editando.id : '') + '">' +
+      '<div class="acciones-form" style="margin-top:10px"><button class="btn btn-oro" type="submit">Guardar</button>' +
+      '<button class="btn" type="button" id="btnCancelarForm">Cancelar</button></div>' +
+      '<div class="error-form" id="errorForm"></div></form>';
+  }
+  html += items.length ? items.map(it => '<div class="fila-lista"><span>' + esc(it.nombre) + '</span><span class="acc">' +
+    '<button class="btn-icono" data-editar-cat="' + lista + '" data-id="' + esc(it.id) + '" title="Editar">' + ic('editar') + '</button>' +
+    '<button class="btn-icono peligro" data-borrar-cat="' + lista + '" data-id="' + esc(it.id) + '" title="Eliminar">' + ic('basura') + '</button>' +
+    '</span></div>').join('') : '<div class="desc" style="margin:0">Sin registros.</div>';
+  return html + '</div>';
+}
+
+/* ------------------------------------------------------------
+   Confirmación propia (sin ventanas del navegador)
+   ------------------------------------------------------------ */
+function confirmar(mensaje, textoOk) {
+  return new Promise(resolve => {
+    const cont = document.getElementById('modal');
+    cont.innerHTML = '<div class="fondo-modal"><div class="modal" style="max-width:400px">' +
+      '<h3>¿Seguro?</h3><div class="dato">' + esc(mensaje) + '</div>' +
+      '<div class="acciones-form" style="justify-content:flex-end">' +
+      '<button class="btn" id="conf-no">Cancelar</button>' +
+      '<button class="btn btn-peligro" id="conf-si">' + esc(textoOk || 'Sí, continuar') + '</button></div></div></div>';
+    const cerrar = v => { cont.innerHTML = ''; resolve(v); };
+    document.getElementById('conf-si').onclick = () => cerrar(true);
+    document.getElementById('conf-no').onclick = () => cerrar(false);
+  });
+}
+
+/* ------------------------------------------------------------
+   Router de vistas
+   ------------------------------------------------------------ */
+function pintar() {
+  if (VISTA === 'tablero') return pintarKiosko();
+  if (VISTA === 'solicitud') return pintarSolicitud();
+  if (VISTA === 'admin') return pintarAdmin();
+  return pintarSalas();
+}
+async function recargarYPintar() {
+  try { await cargar(); } catch (e) { aviso('No se pudo refrescar la información.'); }
+  pintar();
+}
+
+/* ------------------------------------------------------------
+   Clics
+   ------------------------------------------------------------ */
 document.addEventListener('click', async e => {
   const t = e.target;
-  if (t.hasAttribute('data-cerrar') && (t.tagName === 'BUTTON' || t === e.target.closest('.fondo-modal') && !e.target.closest('.modal'))) {
+  const boton = sel => t.closest('[' + sel + ']');
+
+  // cerrar modal
+  if (t.hasAttribute && t.hasAttribute('data-cerrar') && (t.tagName === 'BUTTON' || t.classList.contains('fondo-modal'))) {
     document.getElementById('modal').innerHTML = ''; return;
   }
-  const tarjeta = t.closest('[data-sala]');
-  if (tarjeta) { estado.salaId = tarjeta.dataset.sala; pintar(); return; }
-  const bloque = t.closest('[data-res]');
-  if (bloque) { modalDetalle(bloque.dataset.res); return; }
-  if (t.id === 'btnSolicitar' || t.id === 'btnSolicitarSala') { modalSolicitud(estado.salaId); return; }
+  // --- vista pública ---
+  const tarjeta = boton('data-sala');
+  if (tarjeta) { estado.salaId = tarjeta.getAttribute('data-sala'); pintarSalas(); return; }
+  const bloque = boton('data-res');
+  if (bloque) { modalDetalle(bloque.getAttribute('data-res')); return; }
 
-  if (t.dataset.estatus) {
-    if (t.dataset.estatus !== 'aceptada' && !t.dataset.confirmar) {   // segundo clic para confirmar
-      t.dataset.confirmar = '1'; t.textContent = '¿Seguro?'; return;
+  // --- panel ---
+  if (t.id === 'btnSalir') {
+    estado.clave = ''; try { sessionStorage.removeItem('claveSalas'); } catch (x) {}
+    location.href = urlBase(); return;
+  }
+  if (t.id === 'btnNueva') { estado.editandoId = null; estado.formAbierto = 'reservacion'; pintarAdmin(); window.scrollTo(0, 0); return; }
+  if (t.id === 'btnCancelarForm') { estado.formAbierto = ''; estado.editandoId = null; estado.editandoItem = null; pintarAdmin(); return; }
+  if (t.id === 'btnQuitarFiltro') { estado.desde = ''; estado.hasta = ''; pintarAdmin(); return; }
+  if (t.id === 'btnNuevoBloqueo') { estado.editandoItem = null; estado.formAbierto = 'bloqueo'; pintarAdmin(); return; }
+
+  const editar = boton('data-editar');
+  if (editar) { estado.editandoId = editar.getAttribute('data-editar'); estado.formAbierto = 'reservacion'; pintarAdmin(); window.scrollTo(0, 0); return; }
+
+  const aceptar = boton('data-aceptar');
+  if (aceptar) {
+    const r = estado.reservaciones.find(x => x.id === aceptar.getAttribute('data-aceptar'));
+    if (!r) return;
+    const ch = conflictos(r);
+    if (ch.length && !(await confirmar('Esta solicitud se encima con ' + ch.join('; ') + '. ¿Aceptarla de todos modos?', 'Sí, aceptar'))) return;
+    aceptar.disabled = true;
+    if (await enviarAdmin({ accion:'estatus', id:r.id, estatus:'aceptada' })) aviso('Solicitud aceptada — ya aparece en el tablero.');
+    await recargarYPintar(); return;
+  }
+  const rechazar = boton('data-rechazar');
+  if (rechazar) {
+    if (!(await confirmar('¿Rechazar esta solicitud?', 'Sí, rechazar'))) return;
+    rechazar.disabled = true;
+    if (await enviarAdmin({ accion:'estatus', id:rechazar.getAttribute('data-rechazar'), estatus:'rechazada' })) aviso('Solicitud rechazada.');
+    await recargarYPintar(); return;
+  }
+  const reactivar = boton('data-reactivar');
+  if (reactivar) {
+    if (await enviarAdmin({ accion:'estatus', id:reactivar.getAttribute('data-reactivar'), estatus:'pendiente' })) aviso('Volvió a solicitudes pendientes.');
+    await recargarYPintar(); return;
+  }
+  const borrar = boton('data-borrar');
+  if (borrar) {
+    if (!(await confirmar('Esto borra la reservación de la hoja de cálculo y no se puede deshacer.', 'Sí, eliminar'))) return;
+    if (await enviarAdmin({ accion:'eliminar', id:borrar.getAttribute('data-borrar') })) aviso('Eliminada.');
+    await recargarYPintar(); return;
+  }
+  const proy = boton('data-proyeccion');
+  if (proy) {
+    const r = estado.reservaciones.find(x => x.id === proy.getAttribute('data-proyeccion'));
+    if (!r) return;
+    if (await enviarAdmin({ accion:'editar', id:r.id, mostrar_proyeccion: !r.mostrar_proyeccion })) {
+      aviso(r.mostrar_proyeccion ? 'Oculta en la pantalla de proyección.' : 'Visible en la pantalla de proyección.');
     }
-    t.disabled = true;
-    try {
-      const r = await enviar({ accion:'estatus', id:t.dataset.id, estatus:t.dataset.estatus, clave:estado.clave });
-      if (!r.ok) aviso(r.error);
-      await cargar();
-    } catch (x) { aviso('No se pudo conectar. Intenta de nuevo.'); }
-    pintar();
+    await recargarYPintar(); return;
+  }
+  // bloqueos
+  const edBl = boton('data-editar-bloqueo');
+  if (edBl) {
+    estado.editandoItem = estado.bloqueos.find(b => b.id === edBl.getAttribute('data-editar-bloqueo')) || null;
+    estado.formAbierto = 'bloqueo'; pintarAdmin(); return;
+  }
+  const bgBl = boton('data-borrar-bloqueo');
+  if (bgBl) {
+    if (!(await confirmar('¿Quitar este bloqueo? La sala vuelve a quedar disponible en esas fechas.', 'Sí, quitar'))) return;
+    if (await enviarAdmin({ accion:'bloqueo_eliminar', id:bgBl.getAttribute('data-borrar-bloqueo') })) aviso('Bloqueo eliminado.');
+    await recargarYPintar(); return;
+  }
+  // catálogos
+  const nuevoCat = boton('data-nuevo-cat');
+  if (nuevoCat) { estado.editandoItem = null; estado.formAbierto = 'cat:' + nuevoCat.getAttribute('data-nuevo-cat'); pintarAdmin(); return; }
+  const edCat = boton('data-editar-cat');
+  if (edCat) {
+    const lista = edCat.getAttribute('data-editar-cat'), id = edCat.getAttribute('data-id');
+    if (lista === 'salas') {
+      const s = estado.salas.find(x => x.id === id);
+      estado.editandoItem = s ? { id:s.id, nombre:s.nombre, capacidad:s.capacidad } : null;
+    } else {
+      estado.editandoItem = { id:id, nombre:id, capacidad:'' };
+    }
+    estado.formAbierto = 'cat:' + lista; pintarAdmin(); return;
+  }
+  const bgCat = boton('data-borrar-cat');
+  if (bgCat) {
+    const lista = bgCat.getAttribute('data-borrar-cat'), id = bgCat.getAttribute('data-id');
+    if (!(await confirmar(lista === 'salas'
+      ? 'Se quita la sala del formulario. Las reservaciones que ya tenía se quedan en la hoja.'
+      : 'Se quita de la lista. Si alguna reservación lo sigue usando, va a seguir apareciendo ahí.', 'Sí, quitar'))) return;
+    if (await enviarAdmin({ accion:'catalogo', lista:lista, op:'eliminar', id:id })) aviso('Listo.');
+    await recargarYPintar(); return;
   }
 });
 
-document.addEventListener('change', e => {
-  if (e.target.id === 'fechaAgenda' && e.target.value) { estado.fecha = e.target.value; pintar(); }
+/* ------------------------------------------------------------
+   Cambios en campos
+   ------------------------------------------------------------ */
+document.addEventListener('change', async e => {
+  const t = e.target;
+  if (t.id === 'fechaAgenda' && t.value) { estado.fecha = t.value; pintarSalas(); return; }
+  // "Otro (especificar)"
+  if (t.hasAttribute && t.hasAttribute('data-otro')) {
+    const caja = document.getElementById('otro-' + t.getAttribute('data-otro'));
+    if (caja) caja.style.display = t.value === '__otro__' ? '' : 'none';
+    return;
+  }
+  // formulario público
+  if (t.form && t.form.id === 'formSolicitud' && (t.name === 'sala_id' || t.name === 'fecha')) { actualizarDisponibilidad(); return; }
+  // formulario del panel
+  if (t.form && t.form.id === 'formReservacion' && (t.name === 'sala_id' || t.name === 'fecha')) { actualizarHorarioAdmin(); return; }
+  // estatus desde el tablero
+  if (t.hasAttribute && t.hasAttribute('data-estatus-de')) {
+    t.disabled = true;
+    if (await enviarAdmin({ accion:'estatus', id:t.getAttribute('data-estatus-de'), estatus:t.value })) aviso('Estatus actualizado.');
+    await recargarYPintar(); return;
+  }
+  // formulario de bloqueo
+  if (t.form && t.form.id === 'formBloqueo') {
+    if (t.name === 'tipo') {
+      document.getElementById('bloq-dia').style.display = t.value === 'mes' ? 'none' : '';
+      document.getElementById('bloq-mes').style.display = t.value === 'mes' ? '' : 'none';
+    }
+    if (t.name === 'todoDia') {
+      const f = t.form;
+      f.inicio.disabled = t.checked; f.fin.disabled = t.checked;
+      if (t.checked) { f.inicio.value = ''; f.fin.value = ''; }
+    }
+  }
 });
 
+/* ------------------------------------------------------------
+   Envío de formularios
+   ------------------------------------------------------------ */
 document.addEventListener('submit', async e => {
   e.preventDefault();
-  const f = e.target, datos = Object.fromEntries(new FormData(f)), err = f.querySelector('#errorForm');
-  const boton = f.querySelector('[type=submit]');
-  boton.disabled = true; err.textContent = '';
-  try {
-    if (f.id === 'formClave') {
-      const r = await enviar({ accion:'verificar', clave:datos.clave });
-      if (!r.ok) { err.textContent = r.error; boton.disabled = false; return; }
-      estado.clave = datos.clave;
-      try { sessionStorage.setItem('claveSalas', datos.clave); } catch (x) {}
-      pintar();
+  const f = e.target;
+  const err = f.querySelector('#errorForm');
+  const falla = m => { if (err) { err.textContent = m; err.style.display = 'block'; } else aviso(m); };
+
+  // --- clave del administrador ---
+  if (f.id === 'formClave') {
+    const btn = f.querySelector('[type=submit]');
+    btn.disabled = true; if (err) err.style.display = 'none';
+    try {
+      const clave = f.clave.value;
+      const r = await enviar({ accion:'verificar', clave:clave });
+      if (!r.ok) { falla(r.error || 'La clave no es correcta.'); btn.disabled = false; return; }
+      estado.clave = clave;
+      try { sessionStorage.setItem('claveSalas', clave); } catch (x) {}
+      await recargarYPintar();
+    } catch (x) { falla('No se pudo conectar. Intenta de nuevo.'); btn.disabled = false; }
+    return;
+  }
+  // --- solicitud pública ---
+  if (f.id === 'formSolicitud') { enviarSolicitud(f); return; }
+
+  // --- filtro de fechas del tablero ---
+  if (f.id === 'formFiltro') { estado.desde = f.desde.value; estado.hasta = f.hasta.value; pintarAdmin(); return; }
+
+  // --- alta/edición de reservación (panel) ---
+  if (f.id === 'formReservacion') {
+    if (!f.checkValidity()) { f.reportValidity(); return; }
+    const d = Object.fromEntries(new FormData(f).entries());
+    const i = toMin(d.inicio), fin = toMin(d.fin);
+    if (i === null || fin === null) return falla('Falta el horario.');
+    if (i >= fin) return falla('El horario de término debe ser después del de inicio.');
+    const cuerpo = {
+      accion: estado.editandoId ? 'editar' : 'crear', id: estado.editandoId || '',
+      sala_id:d.sala_id, fecha:d.fecha, inicio:d.inicio, fin:d.fin, nombre:String(d.nombre).trim(),
+      tema:String(d.tema).trim(), participantes:String(d.participantes || '').trim(),
+      area: valorConOtro(f, 'area'), proyecto: valorConOtro(f, 'proyecto'),
+      notas:String(d.notas || '').trim(), link_doc: enlaceSeguro(d.link_doc), link_admin: enlaceSeguro(d.link_admin),
+      estatus:d.estatus, mostrar_proyeccion: !!d.mostrar_proyeccion, mostrar_participantes: !!d.mostrar_participantes
+    };
+    const choques = conflictos({ id:estado.editandoId || '', sala_id:cuerpo.sala_id, fecha:cuerpo.fecha, inicio:cuerpo.inicio, fin:cuerpo.fin });
+    if (choques.length && ['aceptada','en_curso','pendiente'].indexOf(cuerpo.estatus) !== -1 &&
+        !(await confirmar('Se encima con ' + choques.join('; ') + '. ¿Guardar de todos modos?', 'Sí, guardar'))) return;
+    const btn = f.querySelector('[type=submit]'); btn.disabled = true;
+    if (await enviarAdmin(cuerpo)) {
+      aviso(estado.editandoId ? 'Cambios guardados.' : 'Reunión agregada.');
+      estado.formAbierto = ''; estado.editandoId = null;
+    } else btn.disabled = false;
+    await recargarYPintar(); return;
+  }
+
+  // --- bloqueo ---
+  if (f.id === 'formBloqueo') {
+    const d = Object.fromEntries(new FormData(f).entries());
+    const tipo = d.tipo || 'dia';
+    let fechas = [];
+    if (tipo === 'mes') {
+      const dias = Array.prototype.slice.call(f.querySelectorAll('[name=dia]:checked')).map(x => x.value);
+      if (!d.mes) return falla('Elige el mes.');
+      if (!dias.length) return falla('Marca al menos un día de la semana.');
+      fechas = fechasDelMes(d.mes, dias);
+      if (!fechas.length) return falla('Ese mes no tiene esos días.');
+      d.dias = dias.join(',');
     } else {
-      if (datos.inicio >= datos.fin) { err.textContent = 'La hora de término debe ser posterior a la de inicio.'; boton.disabled = false; return; }
-      datos.accion = 'solicitar';
-      const r = await enviar(datos);
-      if (!r.ok) { err.textContent = r.error; boton.disabled = false; return; }
-      document.getElementById('modal').innerHTML = '';
-      estado.salaId = datos.sala_id; estado.fecha = datos.fecha;
-      await cargar(); pintar();
-      aviso('Solicitud enviada. Queda pendiente de aceptación.');
+      if (!d.fecha) return falla('Elige la fecha.');
+      fechas = [d.fecha];
     }
-  } catch (x) { err.textContent = 'No se pudo conectar. Intenta de nuevo.'; boton.disabled = false; }
+    const todoDia = !!d.todoDia;
+    if (!todoDia) {
+      if (!d.inicio || !d.fin) return falla('Pon el horario, o marca “Bloquear todo el día”.');
+      if (toMin(d.inicio) >= toMin(d.fin)) return falla('La hora final debe ser después de la inicial.');
+    }
+    const btn = f.querySelector('[type=submit]'); btn.disabled = true;
+    const ok = await enviarAdmin({
+      accion:'bloqueo_guardar', id: estado.editandoItem ? estado.editandoItem.id : '',
+      sala_id:d.sala_id, tipo:tipo, mes:d.mes || '', dias:d.dias || '', fechas:fechas.join(','),
+      inicio: todoDia ? '' : d.inicio, fin: todoDia ? '' : d.fin,
+      motivo:String(d.motivo || '').trim(), descripcion:String(d.descripcion || '').trim(),
+      mostrar_tablero: !!d.mostrar_tablero
+    });
+    if (ok) { aviso('Bloqueo guardado.'); estado.formAbierto = ''; estado.editandoItem = null; } else btn.disabled = false;
+    await recargarYPintar(); return;
+  }
+
+  // --- catálogos ---
+  if (f.id === 'formCatalogo') {
+    const d = Object.fromEntries(new FormData(f).entries());
+    if (!String(d.nombre || '').trim()) return falla('Escribe el nombre.');
+    const btn = f.querySelector('[type=submit]'); btn.disabled = true;
+    const ok = await enviarAdmin({ accion:'catalogo', lista:f.getAttribute('data-lista'), op:'guardar', id:d.id || '', nombre:String(d.nombre).trim(), capacidad:d.capacidad || '' });
+    if (ok) { aviso('Guardado.'); estado.formAbierto = ''; estado.editandoItem = null; } else btn.disabled = false;
+    await recargarYPintar(); return;
+  }
 });
 
-// ---------- arranque ----------
+/* ------------------------------------------------------------
+   Acceso escondido al panel
+   ------------------------------------------------------------ */
+//  · Cinco clics seguidos en el logo (en menos de 3 segundos).
+//  · O el atajo Ctrl + Alt + A en cualquier parte de la página.
+let golpes = [];
+document.addEventListener('click', e => {
+  if (!e.target.closest || !e.target.closest('#logo-attrapi')) return;
+  const ahora = Date.now();
+  golpes = golpes.filter(t => ahora - t < 3000).concat(ahora);
+  if (golpes.length >= 5) { golpes = []; location.href = '?admin=1'; }
+});
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.altKey && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); location.href = '?admin=1'; }
+});
+
+/* ------------------------------------------------------------
+   Arranque
+   ------------------------------------------------------------ */
+function errorCarga() {
+  document.getElementById('raiz').innerHTML = '<div class="hoja"><div class="panel">' +
+    '<h3>No se pudieron cargar los datos</h3>' +
+    '<div class="desc" style="margin-top:6px">Revisa que la URL de Apps Script en <code>API_URL</code> sea la correcta y que la aplicación web esté implementada con acceso <b>“Cualquier usuario”</b>.</div>' +
+    '<button class="btn btn-vino" onclick="location.reload()">Volver a intentar</button></div></div>';
+}
+// Mientras alguien escribe no se redibuja la pantalla, para no borrarle lo que lleva.
+function ocupadoEscribiendo() {
+  if (document.getElementById('modal').innerHTML) return true;
+  if (estado.formAbierto) return true;
+  if (VISTA === 'solicitud') return true;
+  const a = document.activeElement;
+  return !!(a && (a.tagName === 'INPUT' || a.tagName === 'SELECT' || a.tagName === 'TEXTAREA'));
+}
 (async function () {
   if (API_URL.indexOf('http') !== 0) {
-    document.getElementById('app').innerHTML = '<div class="panel">Falta pegar la URL de Apps Script en la constante <code>API_URL</code> de este archivo.</div>';
+    document.getElementById('raiz').innerHTML = '<div class="hoja"><div class="panel">Falta pegar la URL de Apps Script en la constante <code>API_URL</code> de este archivo.</div></div>';
     return;
   }
   try { estado.clave = sessionStorage.getItem('claveSalas') || ''; } catch (x) {}
-  try { await cargar(); pintar(); }
-  catch (x) { document.getElementById('app').innerHTML = '<div class="panel">No se pudieron cargar los datos. Revisa la URL de Apps Script y que esté implementada con acceso "Cualquier usuario".</div>'; }
-  // refresco automático cada minuto, si no hay un formulario abierto
+  const salaParam = parametros.get('sala'), fechaParam = parametros.get('fecha');
+  if (salaParam) estado.salaId = salaParam;
+  if (fechaParam) estado.fecha = fechaParam;
+  try { await cargar(); } catch (x) { errorCarga(); return; }
+  pintar();
+
+  // Refresco automático: la pantalla de proyección cada 20 s, lo demás cada minuto.
   setInterval(async () => {
-    if (document.getElementById('modal').innerHTML || document.getElementById('formClave')) return;
+    if (ocupadoEscribiendo()) return;
     try { await cargar(); pintar(); } catch (x) {}
-  }, 60000);
+  }, VISTA === 'tablero' ? 20000 : 60000);
+  if (VISTA === 'tablero') setInterval(actualizarReloj, 15000);
 })();
 </script>
 </body>
