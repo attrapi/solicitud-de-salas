@@ -408,9 +408,20 @@ async function cargar() {
   if (!estado.salaId && estado.salas.length) estado.salaId = estado.salas[0].id;
 }
 async function enviar(cuerpo) {
-  // text/plain evita la verificación previa (CORS) que Apps Script no contesta
-  const r = await fetch(API_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(cuerpo) });
-  return r.json();
+  // text/plain evita la verificación previa (CORS) que Apps Script no contesta.
+  // Nunca lanza error: devuelve {ok:false, error} para que siempre se vea un aviso.
+  let r;
+  try {
+    r = await fetch(API_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(cuerpo) });
+  } catch (e) {
+    return { ok:false, error:'No se pudo conectar con la hoja de cálculo. Revisa tu conexión e intenta de nuevo.' };
+  }
+  let texto = '';
+  try { texto = await r.text(); } catch (e) {}
+  try { return JSON.parse(texto); }
+  catch (e) {
+    return { ok:false, error:'El servidor contestó algo que no se entiende. Revisa que la aplicación de Apps Script esté implementada con acceso “Cualquier usuario”.' };
+  }
 }
 async function enviarAdmin(cuerpo) {
   cuerpo.clave = estado.clave;
@@ -1109,7 +1120,7 @@ function catalogoHTML(lista, titulo, items) {
     html += '<form id="formCatalogo" data-lista="' + lista + '" novalidate style="margin-bottom:10px">' +
       '<div class="campo"><label>Nombre</label><input name="nombre" required maxlength="90" value="' + esc(editando ? editando.nombre : '') + '" autofocus></div>' +
       (lista === 'salas' ? '<div class="campo" style="margin-top:8px"><label>Capacidad (lugares)</label><input name="capacidad" type="number" min="1" max="500" value="' + esc(editando ? editando.capacidad : '') + '"></div>' : '') +
-      '<input type="hidden" name="id" value="' + esc(editando ? editando.id : '') + '">' +
+      '<input type="hidden" name="item_id" value="' + esc(editando ? editando.id : '') + '">' +
       '<div class="acciones-form" style="margin-top:10px"><button class="btn btn-oro" type="submit">Guardar</button>' +
       '<button class="btn" type="button" id="btnCancelarForm">Cancelar</button></div>' +
       '<div class="error-form" id="errorForm"></div></form>';
@@ -1280,9 +1291,9 @@ document.addEventListener('change', async e => {
     return;
   }
   // formulario público
-  if (t.form && t.form.id === 'formSolicitud' && (t.name === 'sala_id' || t.name === 'fecha' || t.name === 'num_participantes')) { actualizarDisponibilidad(); return; }
+  if (t.form && t.form.getAttribute('id') === 'formSolicitud' && (t.name === 'sala_id' || t.name === 'fecha' || t.name === 'num_participantes')) { actualizarDisponibilidad(); return; }
   // formulario del panel
-  if (t.form && t.form.id === 'formReservacion' && (t.name === 'sala_id' || t.name === 'fecha')) { actualizarHorarioAdmin(); return; }
+  if (t.form && t.form.getAttribute('id') === 'formReservacion' && (t.name === 'sala_id' || t.name === 'fecha')) { actualizarHorarioAdmin(); return; }
   // estatus desde el tablero
   if (t.hasAttribute && t.hasAttribute('data-estatus-de')) {
     t.disabled = true;
@@ -1290,7 +1301,7 @@ document.addEventListener('change', async e => {
     await recargarYPintar(); return;
   }
   // formulario de bloqueo
-  if (t.form && t.form.id === 'formBloqueo') {
+  if (t.form && t.form.getAttribute('id') === 'formBloqueo') {
     if (t.name === 'tipo') {
       document.getElementById('bloq-dia').style.display = t.value === 'mes' ? 'none' : '';
       document.getElementById('bloq-mes').style.display = t.value === 'mes' ? '' : 'none';
@@ -1309,11 +1320,14 @@ document.addEventListener('change', async e => {
 document.addEventListener('submit', async e => {
   e.preventDefault();
   const f = e.target;
+  // Con getAttribute, no con f.id: si el formulario tiene un campo que se llame
+  // "id", ese campo tapa la propiedad y la comparación fallaría en silencio.
+  const idForm = f.getAttribute('id');
   const err = f.querySelector('#errorForm');
   const falla = m => { if (err) { err.textContent = m; err.style.display = 'block'; } else aviso(m); };
 
   // --- clave del administrador ---
-  if (f.id === 'formClave') {
+  if (idForm === 'formClave') {
     const btn = f.querySelector('[type=submit]');
     btn.disabled = true; if (err) err.style.display = 'none';
     try {
@@ -1327,13 +1341,13 @@ document.addEventListener('submit', async e => {
     return;
   }
   // --- solicitud pública ---
-  if (f.id === 'formSolicitud') { enviarSolicitud(f); return; }
+  if (idForm === 'formSolicitud') { enviarSolicitud(f); return; }
 
   // --- filtro de fechas del tablero ---
-  if (f.id === 'formFiltro') { estado.desde = f.desde.value; estado.hasta = f.hasta.value; pintarAdmin(); return; }
+  if (idForm === 'formFiltro') { estado.desde = f.desde.value; estado.hasta = f.hasta.value; pintarAdmin(); return; }
 
   // --- alta/edición de reservación (panel) ---
-  if (f.id === 'formReservacion') {
+  if (idForm === 'formReservacion') {
     if (!f.checkValidity()) { f.reportValidity(); return; }
     const d = Object.fromEntries(new FormData(f).entries());
     const i = toMin(d.inicio), fin = toMin(d.fin);
@@ -1360,7 +1374,7 @@ document.addEventListener('submit', async e => {
   }
 
   // --- bloqueo ---
-  if (f.id === 'formBloqueo') {
+  if (idForm === 'formBloqueo') {
     const d = Object.fromEntries(new FormData(f).entries());
     const tipo = d.tipo || 'dia';
     let fechas = [];
@@ -1393,11 +1407,11 @@ document.addEventListener('submit', async e => {
   }
 
   // --- catálogos ---
-  if (f.id === 'formCatalogo') {
+  if (idForm === 'formCatalogo') {
     const d = Object.fromEntries(new FormData(f).entries());
     if (!String(d.nombre || '').trim()) return falla('Escribe el nombre.');
     const btn = f.querySelector('[type=submit]'); btn.disabled = true;
-    const ok = await enviarAdmin({ accion:'catalogo', lista:f.getAttribute('data-lista'), op:'guardar', id:d.id || '', nombre:String(d.nombre).trim(), capacidad:d.capacidad || '' });
+    const ok = await enviarAdmin({ accion:'catalogo', lista:f.getAttribute('data-lista'), op:'guardar', id:d.item_id || '', nombre:String(d.nombre).trim(), capacidad:d.capacidad || '' });
     if (ok) { aviso('Guardado.'); estado.formAbierto = ''; estado.editandoItem = null; } else btn.disabled = false;
     await recargarYPintar(); return;
   }
