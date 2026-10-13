@@ -352,6 +352,11 @@ function accionSolicitar_(d) {
   if (!leerSalas_().some(function (s) { return s.id === sala; })) throw new Error('Esa sala no existe.');
   if (fecha < hoy_()) throw new Error('Esa fecha ya pasó.');
   if (aMin_(inicio) === null || aMin_(fin) === null || aMin_(inicio) >= aMin_(fin)) throw new Error('El horario de término debe ser después del de inicio.');
+  // Hoy sólo se puede pedir del bloque en curso en adelante.
+  if (fecha === hoy_()) {
+    var ahora = Number(Utilities.formatDate(new Date(), ZONA, 'H')) * 60 + Number(Utilities.formatDate(new Date(), ZONA, 'm'));
+    if (aMin_(inicio) < Math.floor(ahora / 30) * 30) throw new Error('Ese horario ya pasó. Elige uno de los siguientes.');
+  }
 
   // Protección contra envíos repetidos: si ya hay una igual, se devuelve esa misma.
   var iguales = leerReservaciones_().filter(function (r) {

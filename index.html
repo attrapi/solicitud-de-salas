@@ -285,6 +285,24 @@ function hoyMx() {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
 }
+// Hora de México en minutos desde medianoche, para no ofrecer horarios que ya pasaron.
+function minutosAhoraMx() {
+  try {
+    const p = {};
+    new Intl.DateTimeFormat('es-MX', { timeZone: ZONA, hour12: false, hour: '2-digit', minute: '2-digit' })
+      .formatToParts(new Date()).forEach(x => { p[x.type] = x.value; });
+    return (Number(p.hour) % 24) * 60 + Number(p.minute);
+  } catch (e) {
+    const d = new Date();
+    return d.getHours() * 60 + d.getMinutes();
+  }
+}
+// Primer bloque que todavía se puede pedir en una fecha: en días futuros, todos;
+// hoy, el bloque en curso (a las 11:50 el de las 11:30) y los siguientes.
+function primerBloqueDe(fecha) {
+  if (fecha !== hoyMx()) return null;
+  return Math.floor(minutosAhoraMx() / PASO) * PASO;
+}
 function fmtFecha(iso) {
   const p = String(iso || '').split('-');
   return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : (iso || '—');
@@ -440,13 +458,15 @@ function conflictos(res) {
 }
 function horaOcupadaInicio(ocupadas, m) { return ocupadas.some(f => m >= f.ini && m < f.fin); }
 function horaOcupadaFin(ocupadas, m) { return ocupadas.some(f => m > f.ini && m <= f.fin); }
-function opcionesHorario(ocupadas, seleccionInicio, seleccionFin) {
+function opcionesHorario(ocupadas, seleccionInicio, seleccionFin, minimo) {
   let ini = '<option value="">Selecciona…</option>', fin = '<option value="">Selecciona…</option>';
   for (let m = HORA_MIN * 60; m <= HORA_MAX * 60; m += PASO) {
     const v = aHora(m);
+    const pasoI = minimo !== null && minimo !== undefined && m < minimo;
+    const pasoF = minimo !== null && minimo !== undefined && m <= minimo;
     const oi = horaOcupadaInicio(ocupadas, m), of = horaOcupadaFin(ocupadas, m);
-    ini += '<option value="' + v + '"' + (oi ? ' disabled' : '') + (v === seleccionInicio ? ' selected' : '') + '>' + v + (oi ? ' — ocupado' : '') + '</option>';
-    fin += '<option value="' + v + '"' + (of ? ' disabled' : '') + (v === seleccionFin ? ' selected' : '') + '>' + v + (of ? ' — ocupado' : '') + '</option>';
+    ini += '<option value="' + v + '"' + (oi || pasoI ? ' disabled' : '') + (v === seleccionInicio ? ' selected' : '') + '>' + v + (pasoI ? ' — ya pasó' : oi ? ' — ocupado' : '') + '</option>';
+    fin += '<option value="' + v + '"' + (of || pasoF ? ' disabled' : '') + (v === seleccionFin ? ' selected' : '') + '>' + v + (pasoF ? ' — ya pasó' : of ? ' — ocupado' : '') + '</option>';
   }
   return { ini: ini, fin: fin };
 }
@@ -715,7 +735,12 @@ function actualizarDisponibilidad() {
     caja.className = 'aviso-caja';
     caja.innerHTML = ic('check') + '<span>La sala está libre todo el día en esa fecha.</span>';
   }
-  const ops = opcionesHorario(ocupadas, selI.value, selF.value);
+  const minimo = primerBloqueDe(fecha);
+  if (minimo !== null && minimo > HORA_MAX * 60 - PASO) {
+    caja.className = 'aviso-caja alerta';
+    caja.innerHTML = ic('reloj') + '<span>Por hoy ya no quedan horarios disponibles (se atiende hasta las ' + HORA_MAX + ':00). Elige otra fecha.</span>';
+  }
+  const ops = opcionesHorario(ocupadas, selI.value, selF.value, minimo);
   selI.innerHTML = ops.ini; selF.innerHTML = ops.fin;
 }
 
@@ -734,6 +759,8 @@ async function enviarSolicitud(form) {
   const i = toMin(d.inicio), f = toMin(d.fin);
   if (i === null || f === null) return falla('Falta elegir el horario de inicio y de término.');
   if (i >= f) return falla('El horario de término debe ser después del horario de inicio.');
+  const minimoHoy = primerBloqueDe(d.fecha);
+  if (minimoHoy !== null && i < minimoHoy) return falla('Ese horario ya pasó. Elige uno de los siguientes.');
   if (bloqueoDeDia(d.sala_id, d.fecha)) return falla('Esa sala no está disponible en esa fecha. Elige otra fecha o sala.');
   const choque = franjasOcupadas(d.sala_id, d.fecha).some(fr => i < fr.fin && f > fr.ini);
   if (choque) return falla('Ese horario ya está ocupado en esta sala — elige otro, o revisa arriba los horarios ya tomados.');
@@ -995,7 +1022,7 @@ function actualizarHorarioAdmin() {
   const salaId = form.sala_id.value, fecha = form.fecha.value;
   const selI = document.getElementById('admin-inicio'), selF = document.getElementById('admin-fin');
   const ocupadas = franjasOcupadas(salaId, fecha, estado.editandoId);
-  const ops = opcionesHorario(ocupadas, selI.value || (r ? r.inicio : ''), selF.value || (r ? r.fin : ''));
+  const ops = opcionesHorario(ocupadas, selI.value || (r ? r.inicio : ''), selF.value || (r ? r.fin : ''), null);
   selI.innerHTML = ops.ini; selF.innerHTML = ops.fin;
   // En el panel sí se puede elegir un horario ocupado (a veces hace falta); sólo se avisa.
   [selI, selF].forEach(sel => Array.prototype.forEach.call(sel.options, o => { o.disabled = false; }));
