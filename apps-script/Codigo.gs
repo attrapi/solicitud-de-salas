@@ -22,6 +22,11 @@ var ZONA = 'America/Mexico_City';
 // con el nombre CLAVE_ADMIN. Si no, se usa la de aquí abajo.
 var CLAVE_POR_DEFECTO = 'salas2026';
 
+// Con qué estatus entra una solicitud nueva del formulario público:
+//   'aceptada'  → la sala queda apartada de inmediato, sin que nadie la autorice.
+//   'pendiente' → el administrador tiene que aceptarla antes de que cuente.
+var ESTATUS_NUEVA_SOLICITUD = 'aceptada';
+
 // Estatus que apartan la sala (una solicitud pendiente también aparta).
 var OCUPAN = ['pendiente', 'aceptada', 'en_curso', 'concluida'];
 var ESTATUS_VALIDOS = ['pendiente', 'aceptada', 'rechazada', 'en_curso', 'concluida', 'cancelada'];
@@ -361,7 +366,7 @@ function accionSolicitar_(d) {
   // Protección contra envíos repetidos: si ya hay una igual, se devuelve esa misma.
   var iguales = leerReservaciones_().filter(function (r) {
     return r.sala_id === sala && r.fecha === fecha && r.inicio === inicio && r.fin === fin &&
-           norm_(r.nombre) === norm_(nombre) && r.estatus === 'pendiente';
+           norm_(r.nombre) === norm_(nombre) && r.estatus === ESTATUS_NUEVA_SOLICITUD;
   });
   if (iguales.length) return json_({ ok: true, id: iguales[0].id, repetida: true });
 
@@ -371,7 +376,7 @@ function accionSolicitar_(d) {
   var id = nuevoId_();
   escribir_('reservaciones', {
     id: id, sala_id: sala, fecha: fecha, inicio: inicio, fin: fin, nombre: nombre, tema: tema,
-    estatus: 'pendiente', creado: ahora_(),
+    estatus: ESTATUS_NUEVA_SOLICITUD, creado: ahora_(),
     participantes: String(d.participantes || '').trim(), num_participantes: String(d.num_participantes || '').trim(),
     area: String(d.area || '').trim(),
     proyecto: String(d.proyecto || '').trim(), notas: String(d.notas || '').trim(),

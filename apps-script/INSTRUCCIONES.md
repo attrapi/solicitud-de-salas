@@ -62,6 +62,9 @@ Notas:
 - `tema` es el **asunto** de la reunión (se dejó con ese nombre para no perder lo que ya
   estaba capturado).
 - `estatus`: `pendiente`, `aceptada`, `rechazada`, `en_curso`, `concluida`, `cancelada`.
+- Una solicitud del formulario público entra ya como **aceptada**: la sala queda
+  apartada sin que nadie la autorice. Para volver al esquema de aprobación, cambia
+  `ESTATUS_NUEVA_SOLICITUD` a `'pendiente'` (línea 28) y vuelve a implementar.
 - Las áreas y los proyectos que alguien escriba en «Otro (especificar)» se agregan solos a
   su hoja, y desde ahí ya aparecen en la lista para todos.
 - En **Bloqueos**, un bloqueo por mes se guarda como la lista de fechas concretas que cubre,

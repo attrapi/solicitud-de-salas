@@ -576,7 +576,7 @@ function pintarSalas() {
     '<a class="btn btn-oro" href="?solicitud=1">' + ic('mas') + 'Solicitar sala</a>';
   let html = encabezadoHTML('Subdirección de Construcción', acciones) + '<main>';
   html += '<div class="encab-vista"><div><div class="ceja">Disponibilidad</div><h1>Salas de junta</h1>' +
-    '<div class="sub">Elige una sala para ver su agenda. Los horarios ocupados ya no se pueden solicitar.</div></div></div>';
+    '<div class="sub">Elige una sala para ver su agenda. Apartar una sala es inmediato: los horarios ocupados ya no se pueden pedir.</div></div></div>';
 
   html += '<div class="tarjetas">';
   estado.salas.forEach(s => {
@@ -693,7 +693,7 @@ function pintarSolicitud() {
   const html = '<div class="hoja">' +
     '<div class="hoja-encab"><img src="' + LOGO + '" alt="ATTRAPI">' +
     '<div class="t1">Solicitar una sala</div>' +
-    '<div class="t2">Llena este formulario — el administrador revisará tu solicitud y te avisará si fue aceptada.</div></div>' +
+    '<div class="t2">Llena este formulario y la sala te queda apartada de inmediato. Si después hubiera algún cambio, el administrador te avisa.</div></div>' +
     (estado.backendNuevo ? '' : '<div class="aviso-caja">' + ic('info') + '<span>Tu solicitud se registra igual; algunos datos extra sólo se guardan cuando el administrador termine de actualizar la hoja de cálculo.</span></div>') +
     '<div class="panel"><form id="formSolicitud" novalidate>' +
     '<div class="rejilla">' +
@@ -729,8 +729,8 @@ function pintarSolicitud() {
 function pintarEnviado() {
   document.getElementById('raiz').innerHTML = '<div class="hoja">' +
     '<div class="hoja-encab"><img src="' + LOGO + '" alt="ATTRAPI"></div>' +
-    '<div class="panel"><div class="exito"><div class="t1">¡Solicitud enviada!</div>' +
-    '<div class="t2">El administrador la revisará. Mientras tanto aparece como <b>por confirmar</b> en la agenda de la sala.</div>' +
+    '<div class="panel"><div class="exito"><div class="t1">¡Listo, la sala quedó apartada!</div>' +
+    '<div class="t2">Ya aparece en la agenda de la sala y en el tablero, y nadie más puede pedir ese horario. Si hubiera algún cambio, el administrador te busca.</div>' +
     '<div class="acciones-form" style="justify-content:center;margin-top:18px">' +
     '<a class="btn btn-vino" href="' + urlBase() + '">Ver agenda de salas</a>' +
     '<a class="btn" href="?solicitud=1">Hacer otra solicitud</a></div></div></div></div>';
@@ -955,7 +955,8 @@ function pintarAdmin() {
   if (estado.formAbierto === 'reservacion') html += formReservacionHTML();
 
   // --- Solicitudes pendientes ---
-  html += '<div class="panel"><h3>Solicitudes pendientes</h3><div class="desc">Acepta o rechaza cada solicitud que llegue.</div>';
+  html += '<div class="panel"><h3>Solicitudes pendientes</h3>' +
+    '<div class="desc">Las salas se apartan solas, así que esto normalmente está vacío. Aquí caen las que quedaron sin resolver, y las que tú dejes en “por confirmar” al editarlas.</div>';
   html += pendientes.length ? pendientes.map(r => {
     const ch = conflictos(r);
     return '<div class="sol-card"><div>' +
