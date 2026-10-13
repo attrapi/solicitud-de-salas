@@ -443,6 +443,22 @@ async function cargar() {
   }
   if (!estado.salaId && estado.salas.length) estado.salaId = estado.salas[0].id;
 }
+/* ---------- La clave del panel se queda guardada en este equipo ----------
+   Se borra con el botón "Cerrar sesión" o si deja de ser válida. */
+const LLAVE_CLAVE = 'claveSalas';
+function claveGuardada() {
+  try { return localStorage.getItem(LLAVE_CLAVE) || sessionStorage.getItem(LLAVE_CLAVE) || ''; }
+  catch (e) { return ''; }
+}
+function recordarClave(clave) {
+  try { localStorage.setItem(LLAVE_CLAVE, clave); } catch (e) {}
+  try { sessionStorage.removeItem(LLAVE_CLAVE); } catch (e) {}
+}
+function olvidarClave() {
+  try { localStorage.removeItem(LLAVE_CLAVE); } catch (e) {}
+  try { sessionStorage.removeItem(LLAVE_CLAVE); } catch (e) {}
+}
+
 async function enviar(cuerpo) {
   // text/plain evita la verificación previa (CORS) que Apps Script no contesta.
   // Nunca lanza error: devuelve {ok:false, error} para que siempre se vea un aviso.
@@ -464,7 +480,7 @@ async function enviarAdmin(cuerpo) {
   const r = await enviar(cuerpo);
   if (!r.ok) {
     aviso(r.error || 'No se pudo guardar el cambio.');
-    if (/clave/i.test(r.error || '')) { estado.clave = ''; try { sessionStorage.removeItem('claveSalas'); } catch (e) {} }
+    if (/clave/i.test(r.error || '')) { estado.clave = ''; olvidarClave(); }
     return null;
   }
   return r;
@@ -1023,7 +1039,7 @@ function pintarAccesoAdmin() {
   document.getElementById('raiz').innerHTML = '<div class="hoja" style="max-width:420px">' +
     '<div class="hoja-encab"><img src="' + LOGO + '" alt="ATTRAPI">' +
     '<div class="t1">Acceso del administrador</div>' +
-    '<div class="t2">Esta pantalla sólo la usa quien administra las salas.</div></div>' +
+    '<div class="t2">Esta pantalla sólo la usa quien administra las salas. La clave se queda guardada en este equipo hasta que cierres sesión.</div></div>' +
     '<div class="panel"><form id="formClave">' +
     '<div class="campo"><label for="campo-clave">Clave</label><div class="caja-clave">' +
     '<input id="campo-clave" type="password" name="clave" required autofocus autocomplete="current-password">' +
@@ -1227,7 +1243,7 @@ document.addEventListener('click', async e => {
     return;
   }
   if (t.id === 'btnSalir') {
-    estado.clave = ''; try { sessionStorage.removeItem('claveSalas'); } catch (x) {}
+    estado.clave = ''; olvidarClave();
     location.href = urlBase(); return;
   }
   if (t.id === 'btnNueva') { estado.editandoId = null; estado.formAbierto = 'reservacion'; pintarAdmin(); window.scrollTo(0, 0); return; }
@@ -1369,7 +1385,7 @@ document.addEventListener('submit', async e => {
       const r = await enviar({ accion:'verificar', clave:clave });
       if (!r.ok) { falla(r.error || 'La clave no es correcta.'); btn.disabled = false; return; }
       estado.clave = clave;
-      try { sessionStorage.setItem('claveSalas', clave); } catch (x) {}
+      recordarClave(clave);
       await recargarYPintar();
     } catch (x) { falla('No se pudo conectar. Intenta de nuevo.'); btn.disabled = false; }
     return;
@@ -1526,7 +1542,7 @@ function ocupadoEscribiendo() {
     document.getElementById('raiz').innerHTML = '<div class="hoja"><div class="panel">Falta pegar la URL de Apps Script en la constante <code>API_URL</code> de este archivo.</div></div>';
     return;
   }
-  try { estado.clave = sessionStorage.getItem('claveSalas') || ''; } catch (x) {}
+  estado.clave = claveGuardada();
   const salaParam = parametros.get('sala'), fechaParam = parametros.get('fecha');
   if (salaParam) estado.salaId = salaParam;
   if (fechaParam) estado.fecha = fechaParam;
