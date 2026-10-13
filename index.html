@@ -633,8 +633,7 @@ function campoTexto(nombre, etiqueta, valor, extra) {
    VISTA PÚBLICA · salas y agenda del día
    ------------------------------------------------------------ */
 function pintarSalas() {
-  const acciones = '<a class="btn btn-claro" href="?tablero=1" target="_blank" rel="noopener">' + ic('pantalla') + 'Tablero</a>' +
-    '<a class="btn btn-oro" href="?solicitud=1">' + ic('mas') + 'Solicitar sala</a>';
+  const acciones = '<a class="btn btn-claro" href="?tablero=1" target="_blank" rel="noopener">' + ic('pantalla') + 'Tablero</a>';
   let html = encabezadoHTML('Dirección de Procesos Administrativos de Construcción', acciones) + '<main>';
   html += '<div class="encab-vista"><div><div class="ceja">Disponibilidad</div><h1>Salas de junta</h1>' +
     '<div class="sub">Toca una sala para apartarla; abajo puedes revisar sus horarios. Apartar es inmediato: lo que ya está ocupado no se puede pedir.</div></div></div>';
