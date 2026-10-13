@@ -120,17 +120,35 @@
   @media (max-width:620px){ .rejilla{grid-template-columns:1fr;} }
 
   /* ---------- Tarjetas de salas ---------- */
-  .tarjetas{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
-  .tarjeta{background:var(--surface);border:2px solid var(--borde);border-radius:var(--radio);box-shadow:var(--sombra);padding:16px;cursor:pointer;text-align:left;width:100%;font-family:inherit;}
-  .tarjeta:hover{border-color:var(--oro);}
-  .tarjeta.activa{border-color:var(--vino);}
-  .tarjeta h3{font-size:18px;}
-  .tarjeta .cap{font-size:32px;font-weight:800;color:var(--vino);font-family:var(--fuente-tit);line-height:1.1;margin-top:4px;}
-  .tarjeta .cap small{font-size:14px;font-weight:600;color:var(--suave);font-family:var(--fuente);}
-  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
-  .chips span{background:#f5eee0;color:#6b5210;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;}
-  .chips span.ocupada{background:#fdeceb;color:#a33225;}
-  .chips span.libre{background:#e9f4ee;color:#226a44;}
+  .tarjetas{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:18px;align-items:stretch;}
+  /* Tarjeta vertical tipo cartel: al pasar el mouse se levanta y crece un poco. */
+  .tarjeta{display:flex;flex-direction:column;background:var(--surface);border:1.5px solid var(--borde);
+    border-radius:10px;overflow:hidden;padding:0;cursor:pointer;text-align:left;width:100%;font-family:inherit;
+    box-shadow:0 1px 2px rgba(11,36,54,.07);
+    transition:transform .2s cubic-bezier(0,0,.2,1), box-shadow .2s cubic-bezier(0,0,.2,1), border-color .2s cubic-bezier(0,0,.2,1);}
+  .tarjeta:hover, .tarjeta:focus-visible{transform:translateY(-7px) scale(1.035);
+    box-shadow:0 22px 44px -16px rgba(74,15,36,.5);border-color:var(--oro);}
+  .tarjeta.activa{border-color:var(--vino);box-shadow:0 10px 26px -14px rgba(74,15,36,.55);}
+  .tarjeta .cartel{position:relative;height:148px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(150deg,var(--vino-3) 0%,var(--vino) 48%,var(--vino-2) 100%);overflow:hidden;}
+  .tarjeta .cartel::after{content:'';position:absolute;inset:0;
+    background:radial-gradient(circle at 70% 15%,rgba(176,138,46,.35),transparent 60%);opacity:0;transition:opacity .25s cubic-bezier(0,0,.2,1);}
+  .tarjeta:hover .cartel::after{opacity:1;}
+  .tarjeta .cartel .icono{width:74px;height:74px;color:rgba(255,255,255,.35);stroke-width:1.2;
+    transition:transform .25s cubic-bezier(0,0,.2,1), color .25s;}
+  .tarjeta:hover .cartel .icono{transform:scale(1.1);color:rgba(255,255,255,.55);}
+  .tarjeta .insignia{position:absolute;top:10px;left:10px;z-index:2;background:#fff;color:var(--vino);
+    border-radius:4px;padding:4px 9px;font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+    font-family:var(--fuente-tit);}
+  .tarjeta .insignia.ocupada{background:#fdeceb;color:#a33225;}
+  .tarjeta .insignia.libre{background:#e9f4ee;color:#1f6b42;}
+  .tarjeta .cuerpo{padding:14px 15px 16px;display:flex;flex-direction:column;gap:10px;flex:1;}
+  .tarjeta h3{font-size:21px;line-height:1.12;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;}
+  .chips span{display:inline-flex;align-items:center;gap:5px;background:#f5eee0;color:#6b5210;
+    border-radius:999px;padding:4px 11px;font-size:12px;font-weight:600;}
+  .chips span.cupo{background:var(--acento-claro);color:var(--vino);font-weight:700;}
+  .chips .icono{width:14px;height:14px;}
 
   /* ---------- Agenda del día ---------- */
   .agenda{position:relative;height:720px;margin-left:56px;border-left:1px solid var(--borde);}
@@ -384,6 +402,7 @@ const ICONOS = {
   liga:'<path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/>',
   ojo:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
   ojoNo:'<path d="M3 3l18 18"/><path d="M10.6 5.2A10 10 0 0 1 22 12s-1.3 2.3-3.7 4.1M6.3 6.7C3.7 8.5 2 12 2 12s4 7 10 7a9.7 9.7 0 0 0 4-.8"/>',
+  sala:'<rect x="5" y="9.2" width="14" height="5.6" rx="2.8"/><circle cx="3.6" cy="7" r="1.5"/><circle cx="12" cy="5.4" r="1.5"/><circle cx="20.4" cy="7" r="1.5"/><circle cx="3.6" cy="17" r="1.5"/><circle cx="12" cy="18.6" r="1.5"/><circle cx="20.4" cy="17" r="1.5"/>',
   gente:'<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3.2 3.2 0 0 1 0 6"/><path d="M17.5 20a6.3 6.3 0 0 0-2-4.6"/>',
   check:'<path d="M4 12.5 9.5 18 20 6"/>',
   reloj:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
@@ -615,13 +634,14 @@ function pintarSalas() {
   estado.salas.forEach(s => {
     const delDia = estado.reservaciones.filter(r => r.sala_id === s.id && r.fecha === estado.fecha && OCUPAN.indexOf(r.estatus) !== -1);
     const bl = bloqueoDeDia(s.id, estado.fecha);
-    const chip = bl ? '<span class="ocupada">No disponible hoy</span>'
-      : delDia.length ? '<span class="ocupada">' + delDia.length + (delDia.length === 1 ? ' reunión' : ' reuniones') + '</span>'
-      : '<span class="libre">Libre</span>';
+    const insignia = bl ? '<span class="insignia ocupada">No disponible hoy</span>'
+      : delDia.length ? '<span class="insignia ocupada">' + delDia.length + (delDia.length === 1 ? ' reunión' : ' reuniones') + '</span>'
+      : '<span class="insignia libre">Libre</span>';
     html += '<button class="tarjeta' + (s.id === estado.salaId ? ' activa' : '') + '" data-sala="' + esc(s.id) + '">' +
-      '<h3>' + esc(s.nombre) + '</h3>' +
-      '<div class="cap">' + esc(s.capacidad) + ' <small>lugares</small></div>' +
-      '<div class="chips">' + EQUIPAMIENTO.map(e => '<span>' + esc(e) + '</span>').join('') + chip + '</div>' +
+      '<div class="cartel">' + insignia + ic('sala') + '</div>' +
+      '<div class="cuerpo"><h3>' + esc(s.nombre) + '</h3>' +
+      '<div class="chips"><span class="cupo">' + ic('gente') + esc(s.capacidad) + ' lugares</span>' +
+      EQUIPAMIENTO.map(e => '<span>' + esc(e) + '</span>').join('') + '</div></div>' +
       '</button>';
   });
   html += '</div>';
