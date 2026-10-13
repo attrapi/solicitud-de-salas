@@ -132,13 +132,19 @@
   .tarjeta.activa{border-color:var(--vino);box-shadow:0 10px 26px -14px rgba(74,15,36,.55);}
   .tarjeta .cartel{position:relative;height:148px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
     background:linear-gradient(150deg,var(--vino-3) 0%,var(--vino) 48%,var(--vino-2) 100%);overflow:hidden;}
-  .tarjeta .cartel::after{content:'';position:absolute;inset:0;
+  .tarjeta .cartel::after{content:'';position:absolute;inset:0;z-index:3;
     background:radial-gradient(circle at 70% 15%,rgba(176,138,46,.35),transparent 60%);opacity:0;transition:opacity .25s cubic-bezier(0,0,.2,1);}
+  /* Si la sala tiene foto, se pone de fondo y crece un poco al pasar el mouse. */
+  .tarjeta .cartel .foto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;
+    transition:transform .35s cubic-bezier(0,0,.2,1);}
+  .tarjeta:hover .cartel .foto{transform:scale(1.07);}
+  .tarjeta .cartel .velo{position:absolute;inset:0;z-index:2;
+    background:linear-gradient(to top,rgba(53,13,25,.6),rgba(53,13,25,.1) 55%,rgba(53,13,25,.25));}
   .tarjeta:hover .cartel::after{opacity:1;}
   .tarjeta .cartel .icono{width:74px;height:74px;color:rgba(255,255,255,.35);stroke-width:1.2;
     transition:transform .25s cubic-bezier(0,0,.2,1), color .25s;}
   .tarjeta:hover .cartel .icono{transform:scale(1.1);color:rgba(255,255,255,.55);}
-  .tarjeta .insignia{position:absolute;top:10px;left:10px;z-index:2;background:#fff;color:var(--vino);
+  .tarjeta .insignia{position:absolute;top:10px;left:10px;z-index:4;background:#fff;color:var(--vino);
     border-radius:4px;padding:4px 9px;font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
     font-family:var(--fuente-tit);}
   .tarjeta .insignia.ocupada{background:#fdeceb;color:#a33225;}
@@ -279,6 +285,13 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbwyfNK36rn9eO7h8HJGgaH0
 const LOGO = 'logos/logo_attrapi.png';
 const HORA_MIN = 7, HORA_MAX = 20, PASO = 30;     // la agenda y los horarios van de 7:00 a 20:00, de 30 en 30 minutos
 const EQUIPAMIENTO = ['TV', 'Wifi'];
+
+// Foto de cada sala. Para agregar otra: deja el archivo en la carpeta salas/
+// y pon aquí una línea con el id de la sala y el nombre del archivo.
+// Si el archivo no existe, la tarjeta se dibuja con el icono de siempre.
+const FOTOS = {
+  flores2: 'salas/flores2.jpeg'
+};
 const ZONA = 'America/Mexico_City';
 
 // Listas que se usan la primera vez (después el panel y las propias solicitudes las van llenando).
@@ -388,6 +401,13 @@ function htmlGente(r) {
   if (!num) return esc(nombres);
   if (!nombres) return esc(num);
   return '<span class="globo" tabindex="0" data-globo="' + esc(nombres) + '">' + esc(num) + '</span>';
+}
+// Si la imagen no se puede cargar, se quita junto con su velo y la tarjeta
+// se queda con el fondo guinda y el icono de sala de juntas.
+function fotoFalla(img) {
+  const velo = img.parentElement && img.parentElement.querySelector('.velo');
+  if (velo) velo.remove();
+  img.remove();
 }
 function nombreSala(id) { const s = estado.salas.find(s => s.id === id); return s ? s.nombre : (id || '—'); }
 function salaPorNombre(n) { return estado.salas.find(s => s.nombre === n); }
@@ -647,7 +667,9 @@ function pintarSalas() {
       : '<span class="insignia libre">Libre</span>';
     html += '<a class="tarjeta' + (s.id === estado.salaId ? ' activa' : '') +
       '" href="?solicitud=1&sala=' + encodeURIComponent(s.id) + '&fecha=' + esc(estado.fecha) + '">' +
-      '<div class="cartel">' + insignia + ic('sala') + '</div>' +
+      '<div class="cartel">' +
+      (FOTOS[s.id] ? '<img class="foto" src="' + esc(FOTOS[s.id]) + '" alt="Foto de la ' + esc(s.nombre) + '" loading="lazy" onerror="fotoFalla(this)"><span class="velo"></span>' : '') +
+      insignia + ic('sala') + '</div>' +
       '<div class="cuerpo"><h3>' + esc(s.nombre) + '</h3>' +
       '<div class="chips"><span class="cupo">' + ic('gente') + esc(s.capacidad) + ' lugares</span>' +
       EQUIPAMIENTO.map(e => '<span>' + esc(e) + '</span>').join('') + '</div>' +
