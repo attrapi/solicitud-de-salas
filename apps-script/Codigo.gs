@@ -197,14 +197,18 @@ function escribir_(llave, obj) {
   h.sh.appendRow(fila);
   return obj;
 }
+// Una sola escritura con toda la fila: celda por celda es mucho más lento.
 function actualizar_(llave, id, cambios) {
   var h = filas_(llave);
   for (var i = 0; i < h.lista.length; i++) {
     if (String(h.lista[i].datos.id) !== String(id)) continue;
+    var rango = h.sh.getRange(h.lista[i].fila, 1, 1, h.cols.length);
+    var valores = rango.getValues()[0];
     Object.keys(cambios).forEach(function (c) {
       var col = h.cols.indexOf(c);
-      if (col !== -1) h.sh.getRange(h.lista[i].fila, col + 1).setValue(cambios[c]);
+      if (col !== -1) valores[col] = cambios[c];
     });
+    rango.setValues([valores]);
     return true;
   }
   return false;
@@ -255,6 +259,22 @@ function leerBloqueos_() {
   }).filter(function (b) { return b.id && b.sala_id; });
 }
 
+// Todo lo que la página necesita para dibujarse.
+function datos_() {
+  return {
+    version: VERSION, salas: leerSalas_(), reservaciones: leerReservaciones_(),
+    areas: leerLista_('areas'), proyectos: leerLista_('proyectos'), bloqueos: leerBloqueos_()
+  };
+}
+// Las acciones del panel devuelven ya los datos nuevos, para que la página no
+// tenga que volver a preguntar por ellos en un segundo viaje.
+function listo_(extra) {
+  var out = datos_();
+  out.ok = true;
+  if (extra) Object.keys(extra).forEach(function (k) { out[k] = extra[k]; });
+  return json_(out);
+}
+
 function doGet(e) {
   try {
     var accion = (e && e.parameter && e.parameter.accion) || '';
@@ -266,11 +286,7 @@ function doGet(e) {
         hojas: libro.getSheets().map(function (s) { return { nombre: s.getName(), filas: s.getLastRow(), columnas: encabezados_(s) }; })
       });
     }
-    return json_({
-      ok: true, version: VERSION,
-      salas: leerSalas_(), reservaciones: leerReservaciones_(),
-      areas: leerLista_('areas'), proyectos: leerLista_('proyectos'), bloqueos: leerBloqueos_()
-    });
+    return listo_();
   } catch (err) {
     return json_({ ok: false, error: String(err && err.message || err) });
   }
@@ -393,7 +409,7 @@ function accionEstatus_(d) {
   var estatus = norm_(d.estatus);
   if (ESTATUS_VALIDOS.indexOf(estatus) === -1) throw new Error('Estatus no válido.');
   if (!actualizar_('reservaciones', d.id, { estatus: estatus, actualizado: ahora_() })) throw new Error('No se encontró esa reservación.');
-  return json_({ ok: true });
+  return listo_();
 }
 
 function camposEditables_(d) {
@@ -431,7 +447,7 @@ function accionCrear_(d) {
   escribir_('reservaciones', fila);
   aprender_('areas', d.area);
   aprender_('proyectos', d.proyecto);
-  return json_({ ok: true, id: id });
+  return listo_({ id: id });
 }
 
 function accionEditar_(d) {
@@ -440,13 +456,13 @@ function accionEditar_(d) {
   if (!actualizar_('reservaciones', d.id, camposEditables_(d))) throw new Error('No se encontró esa reservación.');
   if (d.area) aprender_('areas', d.area);
   if (d.proyecto) aprender_('proyectos', d.proyecto);
-  return json_({ ok: true });
+  return listo_();
 }
 
 function accionEliminar_(d) {
   exigirClave_(d);
   if (!borrar_('reservaciones', d.id)) throw new Error('No se encontró esa reservación.');
-  return json_({ ok: true });
+  return listo_();
 }
 
 function accionCatalogo_(d) {
@@ -465,7 +481,7 @@ function accionCatalogo_(d) {
       }
       if (!quitada) throw new Error('No se encontró en la lista.');
     }
-    return json_({ ok: true });
+    return listo_();
   }
   var nombre = String(d.nombre || '').trim();
   if (!nombre) throw new Error('Escribe el nombre.');
@@ -473,12 +489,12 @@ function accionCatalogo_(d) {
     var capacidad = String(d.capacidad || '').trim();
     if (d.id) {
       if (!actualizar_('salas', d.id, capacidad ? { nombre: nombre, capacidad: capacidad } : { nombre: nombre })) throw new Error('No se encontró esa sala.');
-      return json_({ ok: true, id: d.id });
+      return listo_({ id: d.id });
     }
     var idNueva = slug_(nombre);
     if (leerSalas_().some(function (s) { return s.id === idNueva; })) idNueva = idNueva + String(Date.now()).slice(-3);
     escribir_('salas', { id: idNueva, nombre: nombre, capacidad: capacidad || '' });
-    return json_({ ok: true, id: idNueva });
+    return listo_({ id: idNueva });
   }
   // Áreas y proyectos: con id se renombra, sin id se agrega.
   var hh = filas_(llave);
@@ -487,12 +503,12 @@ function accionCatalogo_(d) {
     if (d.id && (String(dd.id) === String(d.id) || norm_(dd.nombre) === norm_(d.id))) {
       var col = hh.cols.indexOf('nombre');
       hh.sh.getRange(hh.lista[j].fila, col + 1).setValue(nombre);
-      return json_({ ok: true });
+      return listo_();
     }
   }
-  if (leerLista_(llave).some(function (x) { return norm_(x.nombre) === norm_(nombre); })) return json_({ ok: true, repetida: true });
+  if (leerLista_(llave).some(function (x) { return norm_(x.nombre) === norm_(nombre); })) return listo_({ repetida: true });
   escribir_(llave, { id: slug_(nombre) + String(Date.now()).slice(-4), nombre: nombre });
-  return json_({ ok: true });
+  return listo_();
 }
 
 function accionBloqueoGuardar_(d) {
@@ -511,17 +527,17 @@ function accionBloqueoGuardar_(d) {
   };
   if (d.id) {
     if (!actualizar_('bloqueos', d.id, fila)) throw new Error('No se encontró ese bloqueo.');
-    return json_({ ok: true, id: d.id });
+    return listo_({ id: d.id });
   }
   fila.id = nuevoId_();
   escribir_('bloqueos', fila);
-  return json_({ ok: true, id: fila.id });
+  return listo_({ id: fila.id });
 }
 
 function accionBloqueoEliminar_(d) {
   exigirClave_(d);
   if (!borrar_('bloqueos', d.id)) throw new Error('No se encontró ese bloqueo.');
-  return json_({ ok: true });
+  return listo_();
 }
 
 /* ============================================================

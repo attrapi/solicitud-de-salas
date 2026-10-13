@@ -428,6 +428,12 @@ async function cargar() {
   const r = await fetch(API_URL + (API_URL.indexOf('?') === -1 ? '?' : '&') + 't=' + Date.now());
   const d = await r.json();
   if (!d || d.ok === false) throw new Error((d && d.error) || 'Respuesta inesperada del servidor');
+  aplicarDatos(d);
+}
+// Acomoda en la página los datos que lleguen, sin importar si vinieron de una
+// consulta o de la respuesta a un cambio que se acaba de guardar.
+function aplicarDatos(d) {
+  if (!d || !d.salas || !d.reservaciones) return false;
   estado.backendNuevo = !!d.version;
   estado.salas = (d.salas || []).map(s => ({ id: s.id, nombre: s.nombre, capacidad: s.capacidad }));
   estado.reservaciones = (d.reservaciones || []).map(normRes);
@@ -442,6 +448,7 @@ async function cargar() {
     estado.areas = unicos(estado.areas.concat(estado.reservaciones.map(r => r.area)));
   }
   if (!estado.salaId && estado.salas.length) estado.salaId = estado.salas[0].id;
+  return true;
 }
 /* ---------- La clave del panel se queda guardada en este equipo ----------
    Se borra con el botón "Cerrar sesión" o si deja de ser válida. */
@@ -477,7 +484,9 @@ async function enviar(cuerpo) {
 }
 async function enviarAdmin(cuerpo) {
   cuerpo.clave = estado.clave;
+  const lento = setTimeout(() => aviso('Guardando…'), 500);
   const r = await enviar(cuerpo);
+  clearTimeout(lento);
   if (!r.ok) {
     aviso(r.error || 'No se pudo guardar el cambio.');
     if (/clave/i.test(r.error || '')) { estado.clave = ''; olvidarClave(); }
@@ -1208,8 +1217,12 @@ function pintar() {
   if (VISTA === 'admin') return pintarAdmin();
   return pintarSalas();
 }
-async function recargarYPintar() {
-  try { await cargar(); } catch (e) { aviso('No se pudo refrescar la información.'); }
+// Si el servidor ya devolvió los datos nuevos, no se le vuelve a preguntar:
+// eso ahorra un viaje completo a Google en cada cambio.
+async function recargarYPintar(respuesta) {
+  if (!aplicarDatos(respuesta)) {
+    try { await cargar(); } catch (e) { aviso('No se pudo refrescar la información.'); }
+  }
   pintar();
 }
 
@@ -1260,36 +1273,48 @@ document.addEventListener('click', async e => {
     if (!r) return;
     const ch = conflictos(r);
     if (ch.length && !(await confirmar('Esta solicitud se encima con ' + ch.join('; ') + '. ¿Aceptarla de todos modos?', 'Sí, aceptar'))) return;
-    aceptar.disabled = true;
-    if (await enviarAdmin({ accion:'estatus', id:r.id, estatus:'aceptada' })) aviso('Solicitud aceptada — ya aparece en el tablero.');
-    await recargarYPintar(); return;
+    r.estatus = 'aceptada'; pintarAdmin();          // se ve el cambio de inmediato
+    const resp = await enviarAdmin({ accion:'estatus', id:r.id, estatus:'aceptada' });
+    if (resp) aviso('Aceptada — ya aparece en el tablero.');
+    await recargarYPintar(resp); return;
   }
   const rechazar = boton('data-rechazar');
   if (rechazar) {
     if (!(await confirmar('¿Rechazar esta solicitud?', 'Sí, rechazar'))) return;
-    rechazar.disabled = true;
-    if (await enviarAdmin({ accion:'estatus', id:rechazar.getAttribute('data-rechazar'), estatus:'rechazada' })) aviso('Solicitud rechazada.');
-    await recargarYPintar(); return;
+    const idR = rechazar.getAttribute('data-rechazar');
+    const rr = estado.reservaciones.find(x => x.id === idR);
+    if (rr) { rr.estatus = 'rechazada'; pintarAdmin(); }
+    const resp = await enviarAdmin({ accion:'estatus', id:idR, estatus:'rechazada' });
+    if (resp) aviso('Solicitud rechazada.');
+    await recargarYPintar(resp); return;
   }
   const reactivar = boton('data-reactivar');
   if (reactivar) {
-    if (await enviarAdmin({ accion:'estatus', id:reactivar.getAttribute('data-reactivar'), estatus:'pendiente' })) aviso('Volvió a solicitudes pendientes.');
-    await recargarYPintar(); return;
+    const idV = reactivar.getAttribute('data-reactivar');
+    const rv = estado.reservaciones.find(x => x.id === idV);
+    if (rv) { rv.estatus = 'pendiente'; pintarAdmin(); }
+    const resp = await enviarAdmin({ accion:'estatus', id:idV, estatus:'pendiente' });
+    if (resp) aviso('Volvió a solicitudes pendientes.');
+    await recargarYPintar(resp); return;
   }
   const borrar = boton('data-borrar');
   if (borrar) {
     if (!(await confirmar('Esto borra la reservación de la hoja de cálculo y no se puede deshacer.', 'Sí, eliminar'))) return;
-    if (await enviarAdmin({ accion:'eliminar', id:borrar.getAttribute('data-borrar') })) aviso('Eliminada.');
-    await recargarYPintar(); return;
+    const idB = borrar.getAttribute('data-borrar');
+    estado.reservaciones = estado.reservaciones.filter(x => x.id !== idB); pintarAdmin();
+    const resp = await enviarAdmin({ accion:'eliminar', id:idB });
+    if (resp) aviso('Eliminada.');
+    await recargarYPintar(resp); return;
   }
   const proy = boton('data-proyeccion');
   if (proy) {
     const r = estado.reservaciones.find(x => x.id === proy.getAttribute('data-proyeccion'));
     if (!r) return;
-    if (await enviarAdmin({ accion:'editar', id:r.id, mostrar_proyeccion: !r.mostrar_proyeccion })) {
-      aviso(r.mostrar_proyeccion ? 'Oculta en la pantalla de proyección.' : 'Visible en la pantalla de proyección.');
-    }
-    await recargarYPintar(); return;
+    const nuevo = !r.mostrar_proyeccion;
+    r.mostrar_proyeccion = nuevo; pintarAdmin();
+    const resp = await enviarAdmin({ accion:'editar', id:r.id, mostrar_proyeccion: nuevo });
+    if (resp) aviso(nuevo ? 'Visible en la pantalla de proyección.' : 'Oculta en la pantalla de proyección.');
+    await recargarYPintar(resp); return;
   }
   // bloqueos
   const edBl = boton('data-editar-bloqueo');
@@ -1300,8 +1325,11 @@ document.addEventListener('click', async e => {
   const bgBl = boton('data-borrar-bloqueo');
   if (bgBl) {
     if (!(await confirmar('¿Quitar este bloqueo? La sala vuelve a quedar disponible en esas fechas.', 'Sí, quitar'))) return;
-    if (await enviarAdmin({ accion:'bloqueo_eliminar', id:bgBl.getAttribute('data-borrar-bloqueo') })) aviso('Bloqueo eliminado.');
-    await recargarYPintar(); return;
+    const idBl = bgBl.getAttribute('data-borrar-bloqueo');
+    estado.bloqueos = estado.bloqueos.filter(x => x.id !== idBl); pintarAdmin();
+    const resp = await enviarAdmin({ accion:'bloqueo_eliminar', id:idBl });
+    if (resp) aviso('Bloqueo eliminado.');
+    await recargarYPintar(resp); return;
   }
   // catálogos
   const nuevoCat = boton('data-nuevo-cat');
@@ -1323,8 +1351,9 @@ document.addEventListener('click', async e => {
     if (!(await confirmar(lista === 'salas'
       ? 'Se quita la sala del formulario. Las reservaciones que ya tenía se quedan en la hoja.'
       : 'Se quita de la lista. Si alguna reservación lo sigue usando, va a seguir apareciendo ahí.', 'Sí, quitar'))) return;
-    if (await enviarAdmin({ accion:'catalogo', lista:lista, op:'eliminar', id:id })) aviso('Listo.');
-    await recargarYPintar(); return;
+    const resp = await enviarAdmin({ accion:'catalogo', lista:lista, op:'eliminar', id:id });
+    if (resp) aviso('Listo.');
+    await recargarYPintar(resp); return;
   }
 });
 
@@ -1346,9 +1375,12 @@ document.addEventListener('change', async e => {
   if (t.form && t.form.getAttribute('id') === 'formReservacion' && (t.name === 'sala_id' || t.name === 'fecha')) { actualizarHorarioAdmin(); return; }
   // estatus desde el tablero
   if (t.hasAttribute && t.hasAttribute('data-estatus-de')) {
-    t.disabled = true;
-    if (await enviarAdmin({ accion:'estatus', id:t.getAttribute('data-estatus-de'), estatus:t.value })) aviso('Estatus actualizado.');
-    await recargarYPintar(); return;
+    const idE = t.getAttribute('data-estatus-de'), nuevoEstatus = t.value;
+    const re = estado.reservaciones.find(x => x.id === idE);
+    if (re) { re.estatus = nuevoEstatus; pintarAdmin(); }
+    const resp = await enviarAdmin({ accion:'estatus', id:idE, estatus:nuevoEstatus });
+    if (resp) aviso('Estatus actualizado.');
+    await recargarYPintar(resp); return;
   }
   // formulario de bloqueo
   if (t.form && t.form.getAttribute('id') === 'formBloqueo') {
@@ -1415,12 +1447,13 @@ document.addEventListener('submit', async e => {
     const choques = conflictos({ id:estado.editandoId || '', sala_id:cuerpo.sala_id, fecha:cuerpo.fecha, inicio:cuerpo.inicio, fin:cuerpo.fin });
     if (choques.length && ['aceptada','en_curso','pendiente'].indexOf(cuerpo.estatus) !== -1 &&
         !(await confirmar('Se encima con ' + choques.join('; ') + '. ¿Guardar de todos modos?', 'Sí, guardar'))) return;
-    const btn = f.querySelector('[type=submit]'); btn.disabled = true;
-    if (await enviarAdmin(cuerpo)) {
+    const btn = f.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Guardando…';
+    const resp = await enviarAdmin(cuerpo);
+    if (resp) {
       aviso(estado.editandoId ? 'Cambios guardados.' : 'Reunión agregada.');
       estado.formAbierto = ''; estado.editandoId = null;
-    } else btn.disabled = false;
-    await recargarYPintar(); return;
+    } else { btn.disabled = false; btn.textContent = 'Guardar'; }
+    await recargarYPintar(resp); return;
   }
 
   // --- bloqueo ---
@@ -1444,7 +1477,7 @@ document.addEventListener('submit', async e => {
       if (!d.inicio || !d.fin) return falla('Pon el horario, o marca “Bloquear todo el día”.');
       if (toMin(d.inicio) >= toMin(d.fin)) return falla('La hora final debe ser después de la inicial.');
     }
-    const btn = f.querySelector('[type=submit]'); btn.disabled = true;
+    const btn = f.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Guardando…';
     const ok = await enviarAdmin({
       accion:'bloqueo_guardar', id: estado.editandoItem ? estado.editandoItem.id : '',
       sala_id:d.sala_id, tipo:tipo, mes:d.mes || '', dias:d.dias || '', fechas:fechas.join(','),
@@ -1452,18 +1485,18 @@ document.addEventListener('submit', async e => {
       motivo:String(d.motivo || '').trim(), descripcion:String(d.descripcion || '').trim(),
       mostrar_tablero: !!d.mostrar_tablero
     });
-    if (ok) { aviso('Bloqueo guardado.'); estado.formAbierto = ''; estado.editandoItem = null; } else btn.disabled = false;
-    await recargarYPintar(); return;
+    if (ok) { aviso('Bloqueo guardado.'); estado.formAbierto = ''; estado.editandoItem = null; } else { btn.disabled = false; btn.textContent = 'Guardar bloqueo'; }
+    await recargarYPintar(ok); return;
   }
 
   // --- catálogos ---
   if (idForm === 'formCatalogo') {
     const d = Object.fromEntries(new FormData(f).entries());
     if (!String(d.nombre || '').trim()) return falla('Escribe el nombre.');
-    const btn = f.querySelector('[type=submit]'); btn.disabled = true;
+    const btn = f.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Guardando…';
     const ok = await enviarAdmin({ accion:'catalogo', lista:f.getAttribute('data-lista'), op:'guardar', id:d.item_id || '', nombre:String(d.nombre).trim(), capacidad:d.capacidad || '' });
-    if (ok) { aviso('Guardado.'); estado.formAbierto = ''; estado.editandoItem = null; } else btn.disabled = false;
-    await recargarYPintar(); return;
+    if (ok) { aviso('Guardado.'); estado.formAbierto = ''; estado.editandoItem = null; } else { btn.disabled = false; btn.textContent = 'Guardar'; }
+    await recargarYPintar(ok); return;
   }
 });
 
