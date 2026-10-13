@@ -124,6 +124,7 @@
   /* Tarjeta vertical tipo cartel: al pasar el mouse se levanta y crece un poco. */
   .tarjeta{display:flex;flex-direction:column;background:var(--surface);border:1.5px solid var(--borde);
     border-radius:10px;overflow:hidden;padding:0;cursor:pointer;text-align:left;width:100%;font-family:inherit;
+    text-decoration:none;color:inherit;
     box-shadow:0 1px 2px rgba(11,36,54,.07);
     transition:transform .2s cubic-bezier(0,0,.2,1), box-shadow .2s cubic-bezier(0,0,.2,1), border-color .2s cubic-bezier(0,0,.2,1);}
   .tarjeta:hover, .tarjeta:focus-visible{transform:translateY(-7px) scale(1.035);
@@ -149,6 +150,13 @@
     border-radius:999px;padding:4px 11px;font-size:12px;font-weight:600;}
   .chips span.cupo{background:var(--acento-claro);color:var(--vino);font-weight:700;}
   .chips .icono{width:14px;height:14px;}
+  .tarjeta .llamada{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12.5px;font-weight:800;
+    color:var(--oro-osc);font-family:var(--fuente-tit);letter-spacing:.03em;text-transform:uppercase;}
+  .tarjeta .llamada .icono{width:15px;height:15px;transition:transform .2s cubic-bezier(0,0,.2,1);}
+  .tarjeta:hover .llamada .icono{transform:translateX(4px);}
+  .selector-sala{display:flex;align-items:center;gap:8px;}
+  .selector-sala select{padding:8px 10px;border:1.5px solid var(--borde);border-radius:4px;font-size:13px;
+    background:#fbfcfd;color:var(--texto);font-family:inherit;}
 
   /* ---------- Agenda del día ---------- */
   .agenda{position:relative;height:720px;margin-left:56px;border-left:1px solid var(--borde);}
@@ -408,6 +416,7 @@ const ICONOS = {
   reloj:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
   calendario:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   flecha:'<path d="M15 18l-6-6 6-6"/>',
+  flechaDer:'<path d="M5 12h13M12.5 5.5 19 12l-6.5 6.5"/>',
   pantalla:'<rect x="2.5" y="4" width="19" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>'
 };
 function ic(n) {
@@ -628,7 +637,7 @@ function pintarSalas() {
     '<a class="btn btn-oro" href="?solicitud=1">' + ic('mas') + 'Solicitar sala</a>';
   let html = encabezadoHTML('Dirección de Procesos Administrativos de Construcción', acciones) + '<main>';
   html += '<div class="encab-vista"><div><div class="ceja">Disponibilidad</div><h1>Salas de junta</h1>' +
-    '<div class="sub">Elige una sala para ver su agenda. Apartar una sala es inmediato: los horarios ocupados ya no se pueden pedir.</div></div></div>';
+    '<div class="sub">Toca una sala para apartarla; abajo puedes revisar sus horarios. Apartar es inmediato: lo que ya está ocupado no se puede pedir.</div></div></div>';
 
   html += '<div class="tarjetas">';
   estado.salas.forEach(s => {
@@ -637,21 +646,26 @@ function pintarSalas() {
     const insignia = bl ? '<span class="insignia ocupada">No disponible hoy</span>'
       : delDia.length ? '<span class="insignia ocupada">' + delDia.length + (delDia.length === 1 ? ' reunión' : ' reuniones') + '</span>'
       : '<span class="insignia libre">Libre</span>';
-    html += '<button class="tarjeta' + (s.id === estado.salaId ? ' activa' : '') + '" data-sala="' + esc(s.id) + '">' +
+    html += '<a class="tarjeta' + (s.id === estado.salaId ? ' activa' : '') +
+      '" href="?solicitud=1&sala=' + encodeURIComponent(s.id) + '&fecha=' + esc(estado.fecha) + '">' +
       '<div class="cartel">' + insignia + ic('sala') + '</div>' +
       '<div class="cuerpo"><h3>' + esc(s.nombre) + '</h3>' +
       '<div class="chips"><span class="cupo">' + ic('gente') + esc(s.capacidad) + ' lugares</span>' +
-      EQUIPAMIENTO.map(e => '<span>' + esc(e) + '</span>').join('') + '</div></div>' +
-      '</button>';
+      EQUIPAMIENTO.map(e => '<span>' + esc(e) + '</span>').join('') + '</div>' +
+      '<div class="llamada">Apartar esta sala' + ic('flechaDer') + '</div></div>' +
+      '</a>';
   });
   html += '</div>';
 
   if (estado.salaId) {
     const bl = bloqueoDeDia(estado.salaId, estado.fecha);
     html += '<div class="panel" style="margin-top:18px">' +
-      '<div class="barra-herr"><div><h3>' + esc(nombreSala(estado.salaId)) + '</h3>' +
+      '<div class="barra-herr"><div><h3>Horarios de la sala</h3>' +
       '<div class="desc" style="margin:0">' + esc(fechaLarga(estado.fecha)) + '</div></div>' +
       '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+      '<div class="selector-sala"><select id="salaAgenda" aria-label="Sala">' +
+      estado.salas.map(sa => '<option value="' + esc(sa.id) + '"' + (sa.id === estado.salaId ? ' selected' : '') + '>' + esc(sa.nombre) + '</option>').join('') +
+      '</select></div>' +
       '<input type="date" id="fechaAgenda" value="' + esc(estado.fecha) + '" style="padding:8px 10px;border:1.5px solid var(--borde);border-radius:4px;font-size:13px">' +
       '<a class="btn btn-oro" href="?solicitud=1&sala=' + encodeURIComponent(estado.salaId) + '&fecha=' + esc(estado.fecha) + '">' + ic('mas') + 'Solicitar esta sala</a>' +
       '</div></div>' +
@@ -1258,8 +1272,6 @@ document.addEventListener('click', async e => {
     document.getElementById('modal').innerHTML = ''; return;
   }
   // --- vista pública ---
-  const tarjeta = boton('data-sala');
-  if (tarjeta) { estado.salaId = tarjeta.getAttribute('data-sala'); pintarSalas(); return; }
   const bloque = boton('data-res');
   if (bloque) { modalDetalle(bloque.getAttribute('data-res')); return; }
 
@@ -1383,6 +1395,7 @@ document.addEventListener('click', async e => {
 document.addEventListener('change', async e => {
   const t = e.target;
   if (t.id === 'fechaAgenda' && t.value) { estado.fecha = t.value; pintarSalas(); return; }
+  if (t.id === 'salaAgenda') { estado.salaId = t.value; pintarSalas(); return; }
   // "Otro (especificar)"
   if (t.hasAttribute && t.hasAttribute('data-otro')) {
     const caja = document.getElementById('otro-' + t.getAttribute('data-otro'));
