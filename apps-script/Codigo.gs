@@ -48,7 +48,7 @@ var SEMILLAS = {
     ['flores1', 'Sala Flores 1', 23],
     ['flores2', 'Sala Flores 2', 11]
   ],
-  areas: ['SGOI-A', 'SGOI-B', 'SGOI-C', 'SPAC', 'DPAC', 'SA'].map(function (n, i) { return ['a' + (i + 1), n]; }),
+  areas: ['SGOI-A', 'SGOI-B', 'SGOI-C', 'SPAC', 'DPAC', 'SA', 'Unidad de Construcción'].map(function (n, i) { return ['a' + (i + 1), n]; }),
   proyectos: ['Querétaro - Irapuato', 'Saltillo - Nuevo Laredo', 'Aifa - Pachuca', 'México - Querétaro',
     'Saltillo - Monterrey', 'Monterrey - Nuevo Laredo', 'Querétaro - San Luis Potosí',
     'San Luis Potosí - Saltillo', 'Irapuato - Guadalajara', 'TIMT - Tren Interurbano México Toluca',
