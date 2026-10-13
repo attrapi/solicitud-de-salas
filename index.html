@@ -100,6 +100,11 @@
   .campo input:focus,.campo select:focus,.campo textarea:focus{border-color:var(--vino-2);background:#fff;}
   .campo textarea{resize:vertical;min-height:88px;}
   .campo .pista{font-size:11.5px;color:var(--tenue);}
+  .caja-clave{position:relative;}
+  .caja-clave input{padding-right:44px;}
+  .ver-clave{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;
+    color:var(--tenue);padding:7px;display:flex;border-radius:50%;}
+  .ver-clave:hover{color:var(--vino);background:var(--bg);}
   .marca-check{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--texto);font-weight:600;cursor:pointer;}
   .marca-check input{width:16px;height:16px;accent-color:var(--vino);}
   .acciones-form{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
@@ -975,7 +980,10 @@ function pintarAccesoAdmin() {
     '<div class="t1">Acceso del administrador</div>' +
     '<div class="t2">Esta pantalla sólo la usa quien administra las salas.</div></div>' +
     '<div class="panel"><form id="formClave">' +
-    '<div class="campo"><label>Clave</label><input type="password" name="clave" required autofocus autocomplete="current-password"></div>' +
+    '<div class="campo"><label for="campo-clave">Clave</label><div class="caja-clave">' +
+    '<input id="campo-clave" type="password" name="clave" required autofocus autocomplete="current-password">' +
+    '<button type="button" class="ver-clave" id="btn-ver-clave" aria-label="Mostrar la contraseña" title="Mostrar la contraseña">' + ic('ojo') + '</button>' +
+    '</div></div>' +
     '<div class="acciones-form"><button class="btn btn-vino" type="submit">Entrar</button>' +
     '<a class="btn" href="' + urlBase() + '">Volver</a></div>' +
     '<div class="error-form" id="errorForm"></div>' +
@@ -1162,6 +1170,17 @@ document.addEventListener('click', async e => {
   if (bloque) { modalDetalle(bloque.getAttribute('data-res')); return; }
 
   // --- panel ---
+  const verClave = t.closest && t.closest('#btn-ver-clave');
+  if (verClave) {
+    const campo = document.getElementById('campo-clave');
+    const visible = campo.type === 'text';
+    campo.type = visible ? 'password' : 'text';
+    verClave.innerHTML = ic(visible ? 'ojo' : 'ojoNo');
+    verClave.setAttribute('aria-label', visible ? 'Mostrar la contraseña' : 'Ocultar la contraseña');
+    verClave.setAttribute('title', visible ? 'Mostrar la contraseña' : 'Ocultar la contraseña');
+    campo.focus();
+    return;
+  }
   if (t.id === 'btnSalir') {
     estado.clave = ''; try { sessionStorage.removeItem('claveSalas'); } catch (x) {}
     location.href = urlBase(); return;
