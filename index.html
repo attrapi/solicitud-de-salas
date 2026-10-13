@@ -344,7 +344,8 @@ function normRes(r) {
     id: String(r.id == null ? '' : r.id),
     sala_id: r.sala_id || '', fecha: r.fecha || '', inicio: r.inicio || '', fin: r.fin || '',
     nombre: r.nombre || '', tema: r.tema || r.asunto || '', estatus: r.estatus || 'pendiente',
-    participantes: r.participantes || '', proyecto: r.proyecto || '', area: r.area || '',
+    participantes: r.participantes || '', num_participantes: r.num_participantes || '',
+    proyecto: r.proyecto || '', area: r.area || '',
     notas: r.notas || '', link_doc: r.link_doc || '', link_admin: r.link_admin || '',
     mostrar_proyeccion: aBool(r.mostrar_proyeccion, true),
     mostrar_participantes: aBool(r.mostrar_participantes, true),
@@ -481,6 +482,16 @@ function valorConOtro(form, nombre) {
   }
   return sel.value;
 }
+// Menú desplegable con el número de asistentes. Son muchas opciones a propósito:
+// el navegador le pone su propia barra de desplazamiento al desplegarlo.
+function campoNumParticipantes(valor, requerido) {
+  var ops = '<option value="">Selecciona…</option>';
+  for (var n = 1; n <= 50; n++) ops += '<option value="' + n + '"' + (String(valor) === String(n) ? ' selected' : '') + '>' + n + (n === 1 ? ' persona' : ' personas') + '</option>';
+  ops += '<option value="Más de 50"' + (valor === 'Más de 50' ? ' selected' : '') + '>Más de 50 personas</option>';
+  return '<div class="campo todo"><label>Número de participantes</label>' +
+    '<select name="num_participantes" id="sel-num"' + (requerido ? ' required' : '') + '>' + ops + '</select>' +
+    '<div class="pista" id="pista-cupo"></div></div>';
+}
 function campoTexto(nombre, etiqueta, valor, extra) {
   return '<div class="campo todo"><label>' + esc(etiqueta) + '</label><input name="' + nombre + '" value="' + esc(valor || '') + '" ' + (extra || '') + '></div>';
 }
@@ -586,7 +597,8 @@ function modalDetalle(id) {
       '<div class="dato"><b>Solicita:</b> ' + esc(r.nombre) + '</div>' +
       (r.area ? '<div class="dato"><b>Área:</b> ' + esc(r.area) + '</div>' : '') +
       (r.proyecto ? '<div class="dato"><b>Proyecto:</b> ' + esc(r.proyecto) + '</div>' : '') +
-      (r.participantes ? '<div class="dato"><b>Participantes:</b> ' + esc(r.participantes) + '</div>' : '') +
+      (r.participantes || r.num_participantes ? '<div class="dato"><b>Participantes:</b> ' + esc(r.participantes) +
+        (r.num_participantes ? (r.participantes ? ' · ' : '') + esc(r.num_participantes) + ' personas' : '') + '</div>' : '') +
       '<div class="dato"><b>Horario:</b> ' + esc(fechaLarga(r.fecha)) + ', ' + esc(r.inicio) + '–' + esc(r.fin) + '</div>' +
       (r.notas ? '<div class="dato"><b>Notas:</b> ' + esc(r.notas) + '</div>' : '') +
       (enlaceSeguro(r.link_doc) ? '<div class="dato"><a href="' + esc(enlaceSeguro(r.link_doc)) + '" target="_blank" rel="noopener">Enlace de consulta</a></div>' : '') +
@@ -619,6 +631,7 @@ function pintarSolicitud() {
     '<div class="campo todo"><label>Participantes</label>' +
     '<input name="participantes" required maxlength="220" list="lista-participantes" placeholder="Nombres de quienes asistirán">' +
     '<datalist id="lista-participantes">' + estado.sugeridos.map(s => '<option value="' + esc(s) + '"></option>').join('') + '</datalist></div>' +
+    campoNumParticipantes('', true) +
     '<div class="campo todo"><label>Fecha</label><input type="date" name="fecha" required min="' + hoyMx() + '" value="' + esc(estado.fecha < hoyMx() ? hoyMx() : estado.fecha) + '"></div>' +
     selectConOtro('area', 'Área', estado.areas, '', true) +
     selectConOtro('proyecto', 'Proyecto', estado.proyectos, '', true) +
@@ -653,9 +666,20 @@ function pintarEnviado() {
 }
 
 // Aviso de horarios ocupados + armado de los menús de horario del formulario público.
+// Compara cuánta gente viene contra los lugares de la sala. Sólo avisa, no impide enviar.
+function avisoCupo(form) {
+  const caja = document.getElementById('pista-cupo');
+  if (!caja || !form.num_participantes) return;
+  const sala = estado.salas.find(s => s.id === form.sala_id.value);
+  const n = Number(form.num_participantes.value);
+  if (!sala || !n || !Number(sala.capacidad) || n <= Number(sala.capacidad)) { caja.textContent = ''; caja.style.color = ''; return; }
+  caja.textContent = 'Ojo: ' + sala.nombre + ' tiene ' + sala.capacidad + ' lugares y pusiste ' + n + ' personas.';
+  caja.style.color = '#c0392b';
+}
 function actualizarDisponibilidad() {
   const form = document.getElementById('formSolicitud');
   if (!form) return;
+  avisoCupo(form);
   const salaId = form.sala_id.value, fecha = form.fecha.value;
   const wrap = document.getElementById('dispo-wrap'), caja = document.getElementById('dispo-caja');
   const selI = document.getElementById('sel-inicio'), selF = document.getElementById('sel-fin');
@@ -711,7 +735,8 @@ async function enviarSolicitud(form) {
     const r = await enviar({
       accion:'solicitar', sala_id:d.sala_id, fecha:d.fecha, inicio:d.inicio, fin:d.fin,
       nombre:String(d.nombre).trim(), tema:String(d.tema).trim(), participantes:String(d.participantes || '').trim(),
-      area:area, proyecto:proyecto, notas:String(d.notas || '').trim(), link_doc:enlaceSeguro(link)
+      num_participantes:String(d.num_participantes || ''), area:area, proyecto:proyecto,
+      notas:String(d.notas || '').trim(), link_doc:enlaceSeguro(link)
     });
     if (!r.ok) return falla(r.error || 'No se pudo registrar la solicitud.');
     estado.enviado = true;
@@ -768,13 +793,14 @@ function filasTablero(gestionable) {
       '<button class="btn-icono" data-editar="' + esc(r.id) + '" title="Editar">' + ic('editar') + '</button>' +
       '<button class="btn-icono peligro" data-borrar="' + esc(r.id) + '" title="Eliminar">' + ic('basura') + '</button>' +
       '</div>' : '';
-    const verParticipantes = r.mostrar_participantes && r.participantes;
+    const textoParticipantes = [r.participantes, r.num_participantes ? r.num_participantes + ' personas' : ''].filter(Boolean).join(' · ');
+    const verParticipantes = r.mostrar_participantes && textoParticipantes;
     return '<div class="fila">' +
       '<div class="celda hora" data-et="Fecha / horario">' + esc(fmtFecha(r.fecha)) + '<br>' + horario + '</div>' +
       '<div class="celda sala" data-et="Sala">' + esc(nombreSala(r.sala_id)) + '</div>' +
       '<div class="celda" data-et="Área">' + esc(r.area || '—') + '</div>' +
       '<div class="celda" data-et="Asunto">' + esc(r.tema || '—') +
-        (verParticipantes ? '<div class="sub-dato">' + ic('gente') + esc(r.participantes) + '</div>' : '') +
+        (verParticipantes ? '<div class="sub-dato">' + ic('gente') + esc(textoParticipantes) + '</div>' : '') +
         (gestionable && r.nombre ? '<div class="sub-dato">' + ic('info') + 'Solicitó: ' + esc(r.nombre) + '</div>' : '') +
         (gestionable && r.notas ? '<div class="sub-dato">' + ic('info') + esc(r.notas) + '</div>' : '') +
         (enlaceSeguro(r.link_doc) ? '<div class="sub-dato">' + ic('liga') + '<a href="' + esc(enlaceSeguro(r.link_doc)) + '" target="_blank" rel="noopener" style="color:inherit">Enlace de consulta</a></div>' : '') +
@@ -859,7 +885,8 @@ function pintarAdmin() {
       (ch.length ? '<div class="choque">' + ic('info') + '<span>Ojo: se encima con ' + esc(ch.join('; ')) + '.</span></div>' : '') +
       '<div class="dato"><b>Solicita:</b> ' + esc(r.nombre) + (r.area ? ' · <b>Área:</b> ' + esc(r.area) : '') + (r.proyecto ? ' · <b>Proyecto:</b> ' + esc(r.proyecto) : '') + '</div>' +
       (r.tema ? '<div class="dato"><b>Asunto:</b> ' + esc(r.tema) + '</div>' : '') +
-      (r.participantes ? '<div class="dato"><b>Participantes:</b> ' + esc(r.participantes) + '</div>' : '') +
+      (r.participantes || r.num_participantes ? '<div class="dato"><b>Participantes:</b> ' + esc(r.participantes) +
+        (r.num_participantes ? (r.participantes ? ' · ' : '') + esc(r.num_participantes) + ' personas' : '') + '</div>' : '') +
       (r.notas ? '<div class="dato"><b>Notas:</b> ' + esc(r.notas) + '</div>' : '') +
       (enlaceSeguro(r.link_doc) ? '<div class="dato"><a href="' + esc(enlaceSeguro(r.link_doc)) + '" target="_blank" rel="noopener">Enlace de consulta</a></div>' : '') +
       (r.creado ? '<div class="dato" style="color:var(--tenue)">Recibida: ' + esc(r.creado) + '</div>' : '') +
@@ -931,6 +958,7 @@ function formReservacionHTML() {
     campoTexto('tema', 'Asunto', d.tema, 'required maxlength="140"') +
     '<div class="campo todo"><label>Participantes</label><input name="participantes" maxlength="220" list="lista-participantes" value="' + esc(d.participantes) + '">' +
     '<datalist id="lista-participantes">' + estado.sugeridos.map(s => '<option value="' + esc(s) + '"></option>').join('') + '</datalist></div>' +
+    campoNumParticipantes(d.num_participantes, false) +
     selectConOtro('area', 'Área', estado.areas, d.area, false) +
     selectConOtro('proyecto', 'Proyecto', estado.proyectos, d.proyecto, false) +
     '<div class="campo todo"><label>Sala</label><select name="sala_id" id="admin-sala" required>' +
@@ -1198,7 +1226,7 @@ document.addEventListener('change', async e => {
     return;
   }
   // formulario público
-  if (t.form && t.form.id === 'formSolicitud' && (t.name === 'sala_id' || t.name === 'fecha')) { actualizarDisponibilidad(); return; }
+  if (t.form && t.form.id === 'formSolicitud' && (t.name === 'sala_id' || t.name === 'fecha' || t.name === 'num_participantes')) { actualizarDisponibilidad(); return; }
   // formulario del panel
   if (t.form && t.form.id === 'formReservacion' && (t.name === 'sala_id' || t.name === 'fecha')) { actualizarHorarioAdmin(); return; }
   // estatus desde el tablero
@@ -1261,6 +1289,7 @@ document.addEventListener('submit', async e => {
       accion: estado.editandoId ? 'editar' : 'crear', id: estado.editandoId || '',
       sala_id:d.sala_id, fecha:d.fecha, inicio:d.inicio, fin:d.fin, nombre:String(d.nombre).trim(),
       tema:String(d.tema).trim(), participantes:String(d.participantes || '').trim(),
+      num_participantes:String(d.num_participantes || ''),
       area: valorConOtro(f, 'area'), proyecto: valorConOtro(f, 'proyecto'),
       notas:String(d.notas || '').trim(), link_doc: enlaceSeguro(d.link_doc), link_admin: enlaceSeguro(d.link_admin),
       estatus:d.estatus, mostrar_proyeccion: !!d.mostrar_proyeccion, mostrar_participantes: !!d.mostrar_participantes

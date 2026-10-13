@@ -31,7 +31,7 @@ var ESQUEMAS = {
     nombre: 'Reservaciones',
     alias: ['reservaciones', 'reservacion', 'reservations', 'solicitudes', 'solicitud'],
     cols: ['id', 'sala_id', 'fecha', 'inicio', 'fin', 'nombre', 'tema', 'estatus', 'creado',
-           'participantes', 'area', 'proyecto', 'notas', 'link_doc', 'link_admin',
+           'participantes', 'num_participantes', 'area', 'proyecto', 'notas', 'link_doc', 'link_admin',
            'mostrar_proyeccion', 'mostrar_participantes', 'actualizado'],
     texto: ['id', 'fecha', 'inicio', 'fin']
   },
@@ -226,7 +226,8 @@ function leerReservaciones_() {
     return {
       id: texto_(d.id), sala_id: texto_(d.sala_id), fecha: fecha_(d.fecha), inicio: hora_(d.inicio), fin: hora_(d.fin),
       nombre: texto_(d.nombre), tema: texto_(d.tema), estatus: norm_(d.estatus) || 'pendiente', creado: texto_(d.creado),
-      participantes: texto_(d.participantes), area: texto_(d.area), proyecto: texto_(d.proyecto), notas: texto_(d.notas),
+      participantes: texto_(d.participantes), num_participantes: texto_(d.num_participantes),
+      area: texto_(d.area), proyecto: texto_(d.proyecto), notas: texto_(d.notas),
       link_doc: texto_(d.link_doc), link_admin: texto_(d.link_admin),
       mostrar_proyeccion: bool_(d.mostrar_proyeccion, true), mostrar_participantes: bool_(d.mostrar_participantes, true)
     };
@@ -366,7 +367,8 @@ function accionSolicitar_(d) {
   escribir_('reservaciones', {
     id: id, sala_id: sala, fecha: fecha, inicio: inicio, fin: fin, nombre: nombre, tema: tema,
     estatus: 'pendiente', creado: ahora_(),
-    participantes: String(d.participantes || '').trim(), area: String(d.area || '').trim(),
+    participantes: String(d.participantes || '').trim(), num_participantes: String(d.num_participantes || '').trim(),
+    area: String(d.area || '').trim(),
     proyecto: String(d.proyecto || '').trim(), notas: String(d.notas || '').trim(),
     link_doc: /^https?:\/\//i.test(String(d.link_doc || '')) ? String(d.link_doc).trim() : '',
     link_admin: '', mostrar_proyeccion: 'TRUE', mostrar_participantes: 'TRUE', actualizado: ahora_()
@@ -385,7 +387,8 @@ function accionEstatus_(d) {
 }
 
 function camposEditables_(d) {
-  var mapa = { sala_id:'sala_id', nombre:'nombre', tema:'tema', participantes:'participantes', area:'area',
+  var mapa = { sala_id:'sala_id', nombre:'nombre', tema:'tema', participantes:'participantes',
+               num_participantes:'num_participantes', area:'area',
                proyecto:'proyecto', notas:'notas', link_doc:'link_doc', link_admin:'link_admin' };
   var cambios = {};
   Object.keys(mapa).forEach(function (k) { if (d[k] !== undefined) cambios[mapa[k]] = String(d[k] || '').trim(); });

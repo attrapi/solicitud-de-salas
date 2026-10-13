@@ -51,7 +51,7 @@ https://script.google.com/macros/s/.../exec?accion=diagnostico&clave=TU_CLAVE
 
 | Hoja | Columnas |
 |---|---|
-| **Reservaciones** | `id`, `sala_id`, `fecha`, `inicio`, `fin`, `nombre`, `tema`, `estatus`, `creado`, `participantes`, `area`, `proyecto`, `notas`, `link_doc`, `link_admin`, `mostrar_proyeccion`, `mostrar_participantes`, `actualizado` |
+| **Reservaciones** | `id`, `sala_id`, `fecha`, `inicio`, `fin`, `nombre`, `tema`, `estatus`, `creado`, `participantes`, `num_participantes`, `area`, `proyecto`, `notas`, `link_doc`, `link_admin`, `mostrar_proyeccion`, `mostrar_participantes`, `actualizado` |
 | **Salas** | `id`, `nombre`, `capacidad` |
 | **Areas** | `id`, `nombre` |
 | **Proyectos** | `id`, `nombre` |
