@@ -165,9 +165,16 @@
     background:#fbfcfd;color:var(--texto);font-family:inherit;}
 
   /* ---------- Agenda del día ---------- */
-  .agenda{position:relative;height:720px;margin-left:56px;border-left:1px solid var(--borde);}
+  .agendas-scroll{overflow-x:auto;}
+  .agendas{display:grid;gap:12px;min-width:620px;}
+  .cab-sala{font-family:var(--fuente-tit);font-size:15px;font-weight:800;color:var(--vino);
+    letter-spacing:.02em;padding:0 0 8px;border-bottom:2px solid var(--borde);}
+  .cab-sala small{display:block;font-family:var(--fuente);font-size:11px;font-weight:600;color:var(--tenue);
+    letter-spacing:.04em;text-transform:uppercase;margin-top:2px;}
+  .col-horas{position:relative;height:720px;}
+  .col-horas span{position:absolute;right:8px;transform:translateY(-50%);font-size:11.5px;color:var(--tenue);font-family:var(--mono);}
+  .agenda{position:relative;height:720px;border-left:1px solid var(--borde);}
   .linea{position:absolute;left:0;right:0;border-top:1px solid #eceef2;}
-  .linea span{position:absolute;left:-56px;top:-9px;width:48px;text-align:right;font-size:11.5px;color:var(--tenue);font-family:var(--mono);}
   .bloque{position:absolute;border-radius:5px;padding:5px 8px;font-size:12.5px;overflow:hidden;cursor:pointer;border:0;text-align:left;line-height:1.3;font-family:inherit;}
   .bloque strong{display:block;font-family:var(--mono);font-size:11.5px;}
   .bloque.aceptada{background:var(--vino);color:#fff;}
@@ -653,7 +660,8 @@ function campoTexto(nombre, etiqueta, valor, extra) {
    VISTA PÚBLICA · salas y agenda del día
    ------------------------------------------------------------ */
 function pintarSalas() {
-  const acciones = '<a class="btn btn-claro" href="?tablero=1" target="_blank" rel="noopener">' + ic('pantalla') + 'Tablero</a>';
+  const acciones = '<a class="btn btn-claro" href="?tablero=1" target="_blank" rel="noopener">' + ic('pantalla') + 'Tablero</a>' +
+    '<a class="btn btn-oro" href="?solicitud=1">' + ic('mas') + 'Solicitar sala</a>';
   let html = encabezadoHTML('Dirección de Procesos Administrativos de Construcción', acciones) + '<main>';
   html += '<div class="encab-vista"><div><div class="ceja">Disponibilidad</div><h1>Salas de junta</h1>' +
     '<div class="sub">Toca una sala para apartarla; abajo puedes revisar sus horarios.</div></div></div>';
@@ -665,8 +673,7 @@ function pintarSalas() {
     const insignia = bl ? '<span class="insignia ocupada">No disponible hoy</span>'
       : delDia.length ? '<span class="insignia ocupada">' + delDia.length + (delDia.length === 1 ? ' reunión' : ' reuniones') + '</span>'
       : '<span class="insignia libre">Libre</span>';
-    html += '<a class="tarjeta' + (s.id === estado.salaId ? ' activa' : '') +
-      '" href="?solicitud=1&sala=' + encodeURIComponent(s.id) + '&fecha=' + esc(estado.fecha) + '">' +
+    html += '<a class="tarjeta" href="?solicitud=1&sala=' + encodeURIComponent(s.id) + '&fecha=' + esc(estado.fecha) + '">' +
       '<div class="cartel">' +
       (FOTOS[s.id] ? '<img class="foto" src="' + esc(FOTOS[s.id]) + '" alt="Foto de la ' + esc(s.nombre) + '" loading="lazy" onerror="fotoFalla(this)"><span class="velo"></span>' : '') +
       insignia + ic('sala') + '</div>' +
@@ -678,21 +685,11 @@ function pintarSalas() {
   });
   html += '</div>';
 
-  if (estado.salaId) {
-    const bl = bloqueoDeDia(estado.salaId, estado.fecha);
+  if (estado.salas.length) {
     html += '<div class="panel" style="margin-top:18px">' +
-      '<div class="barra-herr"><div><h3>Horarios de la sala</h3>' +
-      '<div class="desc" style="margin:0">' + esc(fechaLarga(estado.fecha)) + '</div></div>' +
-      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
-      '<div class="selector-sala"><select id="salaAgenda" aria-label="Sala">' +
-      estado.salas.map(sa => '<option value="' + esc(sa.id) + '"' + (sa.id === estado.salaId ? ' selected' : '') + '>' + esc(sa.nombre) + '</option>').join('') +
-      '</select></div>' +
-      '<input type="date" id="fechaAgenda" value="' + esc(estado.fecha) + '" style="padding:8px 10px;border:1.5px solid var(--borde);border-radius:4px;font-size:13px">' +
-      '<a class="btn btn-oro" href="?solicitud=1&sala=' + encodeURIComponent(estado.salaId) + '&fecha=' + esc(estado.fecha) + '">' + ic('mas') + 'Solicitar esta sala</a>' +
-      '</div></div>' +
-      (bl ? '<div class="aviso-caja alerta">' + ic('info') + '<span><b>Esta sala no está disponible este día.</b>' +
-        (bl.motivo ? ' Motivo: ' + esc(bl.motivo) + '.' : '') + ' Elige otra fecha u otra sala.</span></div>' : '') +
-      agendaHTML() +
+      '<div class="barra-herr"><div><h3>Horarios salas</h3>' +
+      '<div class="desc" style="margin:0">' + esc(fechaLarga(estado.fecha)) + '</div></div></div>' +
+      agendasHTML() +
       '<div class="leyenda">' +
       '<span><i style="background:var(--vino)"></i>Confirmada</span>' +
       '<span><i style="background:var(--st-curso)"></i>En curso</span>' +
@@ -703,16 +700,33 @@ function pintarSalas() {
   document.getElementById('raiz').innerHTML = html;
 }
 
-function agendaHTML() {
+// Las tres salas, una junto a la otra, con una sola columna de horas a la izquierda.
+function agendasHTML() {
+  const total = (HORA_MAX - HORA_MIN) * 60;
+  let horas = '<div class="col-horas">';
+  for (let h = HORA_MIN; h <= HORA_MAX; h++) {
+    horas += '<span style="top:' + ((h - HORA_MIN) * 60 / total * 100) + '%">' + String(h).padStart(2, '0') + ':00</span>';
+  }
+  horas += '</div>';
+  const cabeceras = estado.salas.map(sa => {
+    const bl = bloqueoDeDia(sa.id, estado.fecha);
+    return '<div class="cab-sala">' + esc(sa.nombre) +
+      '<small>' + (bl ? 'No disponible' : esc(sa.capacidad) + ' lugares') + '</small></div>';
+  }).join('');
+  return '<div class="agendas-scroll"><div class="agendas" style="grid-template-columns:52px repeat(' + estado.salas.length + ',1fr)">' +
+    '<div></div>' + cabeceras + horas + estado.salas.map(sa => agendaHTML(sa.id)).join('') +
+    '</div></div>';
+}
+function agendaHTML(salaId) {
   const total = (HORA_MAX - HORA_MIN) * 60;
   let html = '<div class="agenda">';
   for (let h = HORA_MIN; h <= HORA_MAX; h++) {
-    html += '<div class="linea" style="top:' + ((h - HORA_MIN) * 60 / total * 100) + '%"><span>' + String(h).padStart(2, '0') + ':00</span></div>';
+    html += '<div class="linea" style="top:' + ((h - HORA_MIN) * 60 / total * 100) + '%"></div>';
   }
   const items = estado.reservaciones
-    .filter(r => r.sala_id === estado.salaId && r.fecha === estado.fecha && OCUPAN.indexOf(r.estatus) !== -1)
+    .filter(r => r.sala_id === salaId && r.fecha === estado.fecha && OCUPAN.indexOf(r.estatus) !== -1)
     .map(r => ({ id: r.id, inicio: r.inicio, fin: r.fin, clase: r.estatus, t1: r.tema || 'Reunión', t2: r.nombre }))
-    .concat(bloqueosConHorario(estado.salaId, estado.fecha)
+    .concat(bloqueosConHorario(salaId, estado.fecha)
       .map(b => ({ id: 'bloqueo:' + b.id, inicio: b.inicio, fin: b.fin, clase: 'bloqueo', t1: b.descripcion || 'Sala bloqueada', t2: b.motivo || '' })))
     .sort((a, b) => String(a.inicio).localeCompare(String(b.inicio)));
 
@@ -1415,8 +1429,6 @@ document.addEventListener('click', async e => {
    ------------------------------------------------------------ */
 document.addEventListener('change', async e => {
   const t = e.target;
-  if (t.id === 'fechaAgenda' && t.value) { estado.fecha = t.value; pintarSalas(); return; }
-  if (t.id === 'salaAgenda') { estado.salaId = t.value; pintarSalas(); return; }
   // "Otro (especificar)"
   if (t.hasAttribute && t.hasAttribute('data-otro')) {
     const caja = document.getElementById('otro-' + t.getAttribute('data-otro'));
