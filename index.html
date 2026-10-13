@@ -1337,6 +1337,34 @@ document.addEventListener('keydown', e => {
 });
 
 /* ------------------------------------------------------------
+   Modo tablero automático
+   ------------------------------------------------------------ */
+//  En la agenda de salas: si nadie toca nada durante 10 segundos, la pantalla
+//  se pasa sola al tablero. Vuelve a la agenda en cuanto alguien se mueve.
+//  El tablero abierto a propósito (?tablero=1, sin &auto=1) no se mueve de ahí,
+//  para que se pueda dejar proyectado en la tele.
+const INACTIVIDAD_TABLERO = 10000;
+let ultimaActividad = Date.now();
+const EVENTOS_ACTIVIDAD = ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart', 'scroll', 'focusin'];
+EVENTOS_ACTIVIDAD.forEach(function (ev) {
+  document.addEventListener(ev, function () { ultimaActividad = Date.now(); }, { passive: true });
+});
+if (VISTA === 'salas') {
+  setInterval(function () {
+    // Con un detalle abierto o con la pestaña en segundo plano no se cambia.
+    if (document.hidden || document.getElementById('modal').innerHTML) { ultimaActividad = Date.now(); return; }
+    if (Date.now() - ultimaActividad >= INACTIVIDAD_TABLERO) location.href = '?tablero=1&auto=1';
+  }, 1000);
+}
+if (VISTA === 'tablero' && parametros.has('auto')) {
+  const arranque = Date.now();
+  const volver = function () { if (Date.now() - arranque > 1200) location.href = urlBase(); };
+  ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart'].forEach(function (ev) {
+    document.addEventListener(ev, volver, { passive: true });
+  });
+}
+
+/* ------------------------------------------------------------
    Arranque
    ------------------------------------------------------------ */
 function errorCarga() {
