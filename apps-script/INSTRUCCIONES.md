@@ -39,7 +39,7 @@ usando sin que tengas que hacer nada.
 ## 4. Comprobar
 
 Abre en el navegador la URL `/exec` de tu aplicación. Debe empezar con
-`{"ok":true,"version":2,` y traer `salas`, `reservaciones`, `areas`, `proyectos` y `bloqueos`.
+`{"ok":true,"version":3,` y traer `salas`, `reservaciones`, `areas`, `proyectos` y `bloqueos`.
 
 Si algo sale raro, con la clave puedes ver qué hojas y columnas está leyendo:
 

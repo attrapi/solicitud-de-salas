@@ -14,7 +14,7 @@
  * ============================================================
  */
 
-var VERSION = 2;
+var VERSION = 3;
 var ZONA = 'America/Mexico_City';
 
 // Clave del panel de administración. Lo mejor es guardarla en
