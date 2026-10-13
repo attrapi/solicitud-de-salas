@@ -139,7 +139,19 @@
   .leyenda i{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:6px;vertical-align:-2px;}
 
   /* ---------- Tablero ---------- */
-  .tablero-marco{border-radius:var(--radio-sm);overflow:hidden;border:1px solid #d9dee3;}
+  .tablero-marco{border-radius:var(--radio-sm);border:1px solid #d9dee3;}
+  .fila.encabezado{border-radius:3px 3px 0 0;}
+  .fila:last-child{border-radius:0 0 3px 3px;}
+  /* Globo con los nombres: aparece al pasar el mouse sobre el número de personas. */
+  .globo{position:relative;border-bottom:1px dotted currentColor;cursor:help;}
+  .globo::after{content:attr(data-globo);position:absolute;left:0;bottom:calc(100% + 9px);z-index:50;
+    background:var(--vino);color:#fff;padding:8px 11px;border-radius:6px;font-size:12.5px;font-weight:600;
+    line-height:1.45;width:max-content;max-width:min(280px,70vw);white-space:normal;text-align:left;
+    font-family:var(--fuente);text-transform:none;letter-spacing:normal;
+    box-shadow:0 10px 24px rgba(0,0,0,.28);opacity:0;visibility:hidden;transition:opacity .12s;}
+  .globo::before{content:'';position:absolute;left:14px;bottom:calc(100% + 3px);z-index:51;
+    border:6px solid transparent;border-top-color:var(--vino);opacity:0;visibility:hidden;transition:opacity .12s;}
+  .globo:hover::after,.globo:focus::after,.globo:hover::before,.globo:focus::before{opacity:1;visibility:visible;}
   .fila{display:grid;grid-template-columns:1.1fr 1fr 1.1fr 1.5fr 1fr 1.1fr;align-items:center;background:#fff;}
   .fila.encabezado{background:#e4e7eb;}
   .fila.encabezado .celda{color:var(--vino);font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
@@ -182,6 +194,8 @@
   .kiosko-tit{font-family:var(--fuente-tit);font-size:clamp(26px,3.4vw,44px);font-weight:800;color:var(--vino);letter-spacing:.01em;}
   .kiosko-reloj{font-size:clamp(14px,1.4vw,21px);font-weight:700;color:var(--suave);font-family:var(--mono);}
   .kiosko .tablero-marco{border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.08);border:none;}
+  .kiosko .fila.encabezado{border-radius:14px 14px 0 0;}
+  .kiosko .fila:last-child{border-radius:0 0 14px 14px;}
   .kiosko .fila{grid-template-columns:1.1fr 1.1fr 1.1fr 1.5fr 1.2fr 1fr;}
   .kiosko .celda{padding:16px 20px;font-size:clamp(13px,1.35vw,20px);}
   .kiosko .fila.encabezado .celda{font-size:clamp(10px,1vw,13px);}
@@ -327,6 +341,20 @@ function toMin(t) {
 }
 function aHora(m) { return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
 function enlaceSeguro(u) { const t = String(u || '').trim(); return /^https?:\/\//i.test(t) ? t : ''; }
+// "8" → "8 personas". Lo que no es número ("Más de 30") se deja tal cual.
+function textoPersonas(v) {
+  const t = String(v == null ? '' : v).trim();
+  if (!t) return '';
+  const n = Number(t);
+  return n ? n + (n === 1 ? ' persona' : ' personas') : t + ' personas';
+}
+// Se muestra sólo cuánta gente viene; los nombres salen en el globo al pasar el mouse.
+function htmlGente(r) {
+  const num = textoPersonas(r.num_participantes), nombres = String(r.participantes || '').trim();
+  if (!num) return esc(nombres);
+  if (!nombres) return esc(num);
+  return '<span class="globo" tabindex="0" data-globo="' + esc(nombres) + '">' + esc(num) + '</span>';
+}
 function nombreSala(id) { const s = estado.salas.find(s => s.id === id); return s ? s.nombre : (id || '—'); }
 function salaPorNombre(n) { return estado.salas.find(s => s.nombre === n); }
 function aviso(texto) {
@@ -641,8 +669,7 @@ function modalDetalle(id) {
       '<div class="dato"><b>Solicita:</b> ' + esc(r.nombre) + '</div>' +
       (r.area ? '<div class="dato"><b>Área:</b> ' + esc(r.area) + '</div>' : '') +
       (r.proyecto ? '<div class="dato"><b>Proyecto:</b> ' + esc(r.proyecto) + '</div>' : '') +
-      (r.participantes || r.num_participantes ? '<div class="dato"><b>Participantes:</b> ' + esc(r.participantes) +
-        (r.num_participantes ? (r.participantes ? ' · ' : '') + esc(r.num_participantes) + ' personas' : '') + '</div>' : '') +
+      (htmlGente(r) ? '<div class="dato"><b>Participantes:</b> ' + htmlGente(r) + '</div>' : '') +
       '<div class="dato"><b>Horario:</b> ' + esc(fechaLarga(r.fecha)) + ', ' + esc(r.inicio) + '–' + esc(r.fin) + '</div>' +
       (r.notas ? '<div class="dato"><b>Notas:</b> ' + esc(r.notas) + '</div>' : '') +
       (enlaceSeguro(r.link_doc) ? '<div class="dato"><a href="' + esc(enlaceSeguro(r.link_doc)) + '" target="_blank" rel="noopener">Enlace de consulta</a></div>' : '') +
@@ -844,14 +871,14 @@ function filasTablero(gestionable) {
       '<button class="btn-icono" data-editar="' + esc(r.id) + '" title="Editar">' + ic('editar') + '</button>' +
       '<button class="btn-icono peligro" data-borrar="' + esc(r.id) + '" title="Eliminar">' + ic('basura') + '</button>' +
       '</div>' : '';
-    const textoParticipantes = [r.participantes, r.num_participantes ? r.num_participantes + ' personas' : ''].filter(Boolean).join(' · ');
-    const verParticipantes = r.mostrar_participantes && textoParticipantes;
+    const gente = htmlGente(r);
+    const verParticipantes = r.mostrar_participantes && gente;
     return '<div class="fila">' +
       '<div class="celda hora" data-et="Fecha / horario">' + esc(fmtFecha(r.fecha)) + '<br>' + horario + '</div>' +
       '<div class="celda sala" data-et="Sala">' + esc(nombreSala(r.sala_id)) + '</div>' +
       '<div class="celda" data-et="Área">' + esc(r.area || '—') + '</div>' +
       '<div class="celda" data-et="Asunto">' + esc(r.tema || '—') +
-        (verParticipantes ? '<div class="sub-dato">' + ic('gente') + esc(textoParticipantes) + '</div>' : '') +
+        (verParticipantes ? '<div class="sub-dato">' + ic('gente') + gente + '</div>' : '') +
         (gestionable && r.nombre ? '<div class="sub-dato">' + ic('info') + 'Solicitó: ' + esc(r.nombre) + '</div>' : '') +
         (gestionable && r.notas ? '<div class="sub-dato">' + ic('info') + esc(r.notas) + '</div>' : '') +
         (enlaceSeguro(r.link_doc) ? '<div class="sub-dato">' + ic('liga') + '<a href="' + esc(enlaceSeguro(r.link_doc)) + '" target="_blank" rel="noopener" style="color:inherit">Enlace de consulta</a></div>' : '') +
@@ -936,8 +963,7 @@ function pintarAdmin() {
       (ch.length ? '<div class="choque">' + ic('info') + '<span>Ojo: se encima con ' + esc(ch.join('; ')) + '.</span></div>' : '') +
       '<div class="dato"><b>Solicita:</b> ' + esc(r.nombre) + (r.area ? ' · <b>Área:</b> ' + esc(r.area) : '') + (r.proyecto ? ' · <b>Proyecto:</b> ' + esc(r.proyecto) : '') + '</div>' +
       (r.tema ? '<div class="dato"><b>Asunto:</b> ' + esc(r.tema) + '</div>' : '') +
-      (r.participantes || r.num_participantes ? '<div class="dato"><b>Participantes:</b> ' + esc(r.participantes) +
-        (r.num_participantes ? (r.participantes ? ' · ' : '') + esc(r.num_participantes) + ' personas' : '') + '</div>' : '') +
+      (htmlGente(r) ? '<div class="dato"><b>Participantes:</b> ' + htmlGente(r) + '</div>' : '') +
       (r.notas ? '<div class="dato"><b>Notas:</b> ' + esc(r.notas) + '</div>' : '') +
       (enlaceSeguro(r.link_doc) ? '<div class="dato"><a href="' + esc(enlaceSeguro(r.link_doc)) + '" target="_blank" rel="noopener">Enlace de consulta</a></div>' : '') +
       (r.creado ? '<div class="dato" style="color:var(--tenue)">Recibida: ' + esc(r.creado) + '</div>' : '') +
