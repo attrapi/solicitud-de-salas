@@ -1468,10 +1468,19 @@ document.addEventListener('keydown', e => {
 //  para que se pueda dejar proyectado en la tele.
 const INACTIVIDAD_TABLERO = 10000;
 let ultimaActividad = Date.now();
-const EVENTOS_ACTIVIDAD = ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart', 'scroll', 'focusin'];
-EVENTOS_ACTIVIDAD.forEach(function (ev) {
+let ultimoX = null, ultimoY = null;
+['mousedown', 'keydown', 'wheel', 'touchstart', 'scroll', 'focusin'].forEach(function (ev) {
   document.addEventListener(ev, function () { ultimaActividad = Date.now(); }, { passive: true });
 });
+// El mouse quieto también dispara "mousemove" cuando la pantalla se redibuja debajo.
+// Sólo cuenta como actividad si el puntero de veras cambió de lugar.
+document.addEventListener('mousemove', function (e) {
+  if (e.clientX === ultimoX && e.clientY === ultimoY) return;
+  ultimoX = e.clientX; ultimoY = e.clientY;
+  ultimaActividad = Date.now();
+}, { passive: true });
+// Al volver a la pestaña se cuentan los 10 segundos desde ese momento.
+document.addEventListener('visibilitychange', function () { ultimaActividad = Date.now(); });
 if (VISTA === 'salas') {
   setInterval(function () {
     // Con un detalle abierto o con la pestaña en segundo plano no se cambia.
