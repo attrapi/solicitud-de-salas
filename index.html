@@ -485,9 +485,17 @@ function valorConOtro(form, nombre) {
 // Menú desplegable con el número de asistentes. Son muchas opciones a propósito:
 // el navegador le pone su propia barra de desplazamiento al desplegarlo.
 function campoNumParticipantes(valor, requerido) {
-  var ops = '<option value="">Selecciona…</option>';
-  for (var n = 1; n <= 50; n++) ops += '<option value="' + n + '"' + (String(valor) === String(n) ? ' selected' : '') + '>' + n + (n === 1 ? ' persona' : ' personas') + '</option>';
-  ops += '<option value="Más de 50"' + (valor === 'Más de 50' ? ' selected' : '') + '>Más de 50 personas</option>';
+  var TOPE = 30, otros = 'Más de ' + TOPE;
+  var ops = '<option value="">Selecciona…</option>', estaEnLista = false;
+  for (var n = 1; n <= TOPE; n++) {
+    var puesto = String(valor) === String(n);
+    if (puesto) estaEnLista = true;
+    ops += '<option value="' + n + '"' + (puesto ? ' selected' : '') + '>' + n + (n === 1 ? ' persona' : ' personas') + '</option>';
+  }
+  ops += '<option value="' + otros + '"' + (valor === otros ? ' selected' : '') + '>' + otros + ' personas</option>';
+  // Si una reservación vieja trae un valor que ya no está en la lista, se conserva
+  // para no borrárselo sin querer al editarla.
+  if (valor && !estaEnLista && valor !== otros) ops += '<option value="' + esc(valor) + '" selected>' + esc(valor) + '</option>';
   return '<div class="campo todo"><label>Número de participantes</label>' +
     '<select name="num_participantes" id="sel-num"' + (requerido ? ' required' : '') + '>' + ops + '</select>' +
     '<div class="pista" id="pista-cupo"></div></div>';
