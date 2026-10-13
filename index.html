@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agenda de salas · ATTRAPI</title>
-<link rel="icon" href="logos/logo_attrapi.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234a0f24'/%3E%3Crect x='6.5' y='8.5' width='19' height='17' rx='2.6' fill='%23ffffff'/%3E%3Crect x='6.5' y='8.5' width='19' height='5' rx='2.6' fill='%23b08a2e'/%3E%3Crect x='6.5' y='11' width='19' height='2.5' fill='%23b08a2e'/%3E%3Crect x='10' y='5' width='2.6' height='6' rx='1.3' fill='%23f1f3f5'/%3E%3Crect x='19.4' y='5' width='2.6' height='6' rx='1.3' fill='%23f1f3f5'/%3E%3Crect x='9.4' y='16' width='5.4' height='2.8' rx='1.2' fill='%234a0f24'/%3E%3Crect x='17.2' y='16' width='5.4' height='2.8' rx='1.2' fill='%23ccd1d6'/%3E%3Crect x='9.4' y='20.4' width='5.4' height='2.8' rx='1.2' fill='%23ccd1d6'/%3E%3Crect x='17.2' y='20.4' width='5.4' height='2.8' rx='1.2' fill='%23b08a2e'/%3E%3C/svg%3E">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@500;600;700;800&display=swap');
   :root{
@@ -182,6 +182,12 @@
   .kiosko .fila.encabezado .celda{font-size:clamp(10px,1vw,13px);}
   .kiosko .celda.estatus span{font-size:clamp(11px,1.05vw,15px);padding:5px 13px;}
   .kiosko-pie{margin-top:18px;text-align:center;font-size:12.5px;color:var(--tenue);}
+  .volver-kiosko{position:fixed;top:18px;left:18px;z-index:30;display:inline-flex;align-items:center;gap:8px;
+    background:#fff;color:var(--vino);border:1px solid var(--borde);border-radius:999px;padding:10px 18px 10px 13px;
+    font-size:14px;font-weight:700;text-decoration:none;box-shadow:0 6px 18px rgba(0,0,0,.14);}
+  .volver-kiosko:hover{background:var(--vino);color:#fff;border-color:var(--vino);}
+  .volver-kiosko .icono{width:20px;height:20px;}
+  @media (max-width:760px){ .volver-kiosko{padding:11px;} .volver-kiosko span{display:none;} }
 
   /* ---------- Modal ---------- */
   .fondo-modal{position:fixed;inset:0;background:rgba(20,10,14,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:40;}
@@ -791,6 +797,7 @@ function encabezadoTablero(gestionable) {
    ------------------------------------------------------------ */
 function pintarKiosko() {
   document.getElementById('raiz').innerHTML = '<div class="kiosko">' +
+    '<a class="volver-kiosko" href="' + urlBase() + '" title="Volver a la agenda de salas">' + ic('flecha') + '<span>Agenda de salas</span></a>' +
     '<div class="kiosko-logos"><img src="' + LOGO + '" alt="ATTRAPI"></div>' +
     '<div class="kiosko-encab"><div class="kiosko-tit">Agenda de salas</div><div class="kiosko-reloj" id="reloj"></div></div>' +
     '<div class="tablero-marco">' + encabezadoTablero(false) + filasTablero(false) + '</div>' +
