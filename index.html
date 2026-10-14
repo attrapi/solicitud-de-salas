@@ -426,6 +426,23 @@ function fotoFalla(img) {
   if (velo) velo.remove();
   img.remove();
 }
+// El estatus que se ve en pantalla lo decide la hora, no hace falta que el
+// administrador vaya moviendo cada reunión: lo que ya terminó sale como
+// concluida, lo que está corriendo como en curso y lo demás como próxima.
+// Lo que se marcó a mano como cancelada, rechazada o concluida se respeta.
+function estatusVisible(r) {
+  if (['cancelada', 'rechazada', 'concluida', 'pendiente'].indexOf(r.estatus) !== -1) return r.estatus;
+  const hoy = hoyMx();
+  if (r.fecha < hoy) return 'concluida';
+  if (r.fecha > hoy) return 'aceptada';
+  const i = toMin(r.inicio);
+  if (i === null) return r.estatus;
+  const f = toMin(r.fin) === null ? i + PASO : toMin(r.fin);
+  const ahora = minutosAhoraMx();
+  if (ahora >= f) return 'concluida';
+  if (ahora >= i) return 'en_curso';
+  return 'aceptada';
+}
 function nombreSala(id) { const s = estado.salas.find(s => s.id === id); return s ? s.nombre : (id || '—'); }
 function salaPorNombre(n) { return estado.salas.find(s => s.nombre === n); }
 function aviso(texto) {
@@ -739,7 +756,7 @@ function agendaHTML(salaId) {
   }
   const items = estado.reservaciones
     .filter(r => r.sala_id === salaId && r.fecha === estado.fecha && OCUPAN.indexOf(r.estatus) !== -1)
-    .map(r => ({ id: r.id, inicio: r.inicio, fin: r.fin, clase: r.estatus, t1: r.tema || 'Reunión', t2: r.nombre }))
+    .map(r => ({ id: r.id, inicio: r.inicio, fin: r.fin, clase: estatusVisible(r), t1: r.tema || 'Reunión', t2: r.nombre }))
     .concat(bloqueosConHorario(salaId, estado.fecha)
       .map(b => ({ id: 'bloqueo:' + b.id, inicio: b.inicio, fin: b.fin, clase: 'bloqueo', t1: b.descripcion || 'Sala bloqueada', t2: b.motivo || '' })))
     .sort((a, b) => String(a.inicio).localeCompare(String(b.inicio)));
@@ -809,7 +826,7 @@ function modalDetalle(id) {
   } else {
     const r = estado.reservaciones.find(r => r.id === id);
     if (!r) return;
-    const e = ESTATUS[r.estatus] || ESTATUS.pendiente;
+    const e = ESTATUS[estatusVisible(r)] || ESTATUS.pendiente;
     cuerpo = '<h3>' + esc(nombreSala(r.sala_id)) + '</h3>' +
       '<div class="dato"><b>Asunto:</b> ' + esc(r.tema || '—') + '</div>' +
       '<div class="dato"><b>Solicita:</b> ' + esc(r.nombre) + '</div>' +
@@ -1008,9 +1025,9 @@ function filasTablero(gestionable) {
           (gestionable ? '<div class="sub-dato">' + ic('info') + 'Se administra abajo, en “Bloquear fechas”.</div>' : '') + '</div>' +
         '</div>';
     }
-    const e = ESTATUS[r.estatus] || ESTATUS.aceptada;
+    const e = ESTATUS[estatusVisible(r)] || ESTATUS.aceptada;
     const gestion = gestionable ? '<div class="celda gestion" data-et="Cambiar">' +
-      '<select data-estatus-de="' + esc(r.id) + '" aria-label="Cambiar estatus">' +
+      '<select data-estatus-de="' + esc(r.id) + '" aria-label="Cambiar estatus" title="Lo que diga aquí manda sobre el estatus automático">' +
       ['aceptada','en_curso','concluida','cancelada'].map(k => '<option value="' + k + '"' + (r.estatus === k ? ' selected' : '') + '>' + ESTATUS[k].etiqueta.charAt(0) + ESTATUS[k].etiqueta.slice(1).toLowerCase() + '</option>').join('') +
       '</select>' +
       '<button class="btn-icono" data-proyeccion="' + esc(r.id) + '" title="' + (r.mostrar_proyeccion ? 'Se ve en la proyección. Clic para ocultarla.' : 'Oculta en la proyección. Clic para mostrarla.') + '">' + ic(r.mostrar_proyeccion ? 'ojo' : 'ojoNo') + '</button>' +
