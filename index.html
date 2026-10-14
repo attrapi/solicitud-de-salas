@@ -141,6 +141,10 @@
   .tarjeta:hover .cartel .foto{transform:scale(1.07);}
   .tarjeta .cartel .velo{position:absolute;inset:0;z-index:2;
     background:linear-gradient(to top,rgba(53,13,25,.62),rgba(53,13,25,.2) 55%,rgba(53,13,25,.35));}
+  /* Mesa de la sala con un nodo por lugar, de fondo del cartel. */
+  .tarjeta .cartel .mesa{position:absolute;inset:0;z-index:3;width:100%;height:100%;
+    transition:transform .3s cubic-bezier(0,0,.2,1);}
+  .tarjeta:hover .cartel .mesa{transform:scale(1.05);}
   /* La capacidad va al centro del panel, como píldora. */
   .tarjeta .cupo-cartel{position:relative;z-index:4;display:inline-flex;align-items:center;gap:8px;
     background:rgba(255,255,255,.96);color:var(--vino);border-radius:999px;padding:10px 20px;
@@ -687,6 +691,53 @@ function campoTexto(nombre, etiqueta, valor, extra) {
 /* ------------------------------------------------------------
    VISTA PÚBLICA · salas y agenda del día
    ------------------------------------------------------------ */
+/* Dibuja la mesa de la sala con un nodo por cada lugar, para el fondo del
+   cartel de la tarjeta. Los nodos se reparten en los dos lados largos y, si
+   son suficientes, también en las cabeceras. El tamaño del nodo baja conforme
+   hay más lugares, y la mesa crece con el espacio que sobra, para que el
+   dibujo siempre llene el fondo disponible. */
+function mesaHTML(capacidad) {
+  const n = Math.min(60, Math.max(1, Math.round(Number(capacidad) || 0)));
+  const W = 300, H = 148, cx = W / 2, cy = H / 2;
+  const cabeceras = n >= 6 ? 2 : 0;                   // un lugar en cada punta
+  const lados = n - cabeceras;
+  const arriba = Math.ceil(lados / 2), abajo = lados - arriba;
+  const porLado = Math.max(arriba, 1);
+
+  // El radio sale del tramo que le toca a cada lugar en el lado largo; el ancho
+  // de la mesa depende a su vez del radio, así que se acomoda en unas pasadas.
+  let r = 11;
+  for (let i = 0; i < 4; i++) {
+    const ancho = W - 2 * (10 + (cabeceras ? 3 * r + 4 : 18));
+    r = Math.max(3, Math.min(11, ancho / porLado * 0.36));
+  }
+  const hueco = r + 4;                                // separación entre la mesa y sus nodos
+  const anchoMesa = W - 2 * (10 + (cabeceras ? hueco + 2 * r : 18));
+  const altoMesa = H - 2 * (10 + hueco + 2 * r);
+  const x0 = cx - anchoMesa / 2, y0 = cy - altoMesa / 2;
+
+  // Los lugares de un lado se reparten a lo largo de la mesa, centrados.
+  const enFila = (cuantos, y) => {
+    let d = '';
+    for (let i = 0; i < cuantos; i++) {
+      const x = x0 + anchoMesa * (i + 0.5) / cuantos;
+      d += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + r.toFixed(1) + '"/>';
+    }
+    return d;
+  };
+
+  let nodos = enFila(arriba, y0 - hueco - r) + (abajo ? enFila(abajo, y0 + altoMesa + hueco + r) : '');
+  if (cabeceras) {
+    nodos += '<circle cx="' + (x0 - hueco - r).toFixed(1) + '" cy="' + cy + '" r="' + r.toFixed(1) + '"/>' +
+             '<circle cx="' + (x0 + anchoMesa + hueco + r).toFixed(1) + '" cy="' + cy + '" r="' + r.toFixed(1) + '"/>';
+  }
+
+  return '<svg class="mesa" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">' +
+    '<rect x="' + x0.toFixed(1) + '" y="' + y0.toFixed(1) + '" width="' + anchoMesa.toFixed(1) + '" height="' + altoMesa.toFixed(1) + '"' +
+    ' rx="' + Math.min(26, altoMesa / 2).toFixed(1) + '" fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.45)" stroke-width="1.6"/>' +
+    '<g fill="rgba(255,255,255,.7)">' + nodos + '</g></svg>';
+}
+
 function pintarSalas() {
   const acciones = '<a class="btn btn-claro" href="?tablero=1" target="_blank" rel="noopener">' + ic('pantalla') + 'Tablero</a>' +
     '<a class="btn btn-oro" href="?solicitud=1">' + ic('mas') + 'Solicitar sala</a>';
@@ -704,7 +755,7 @@ function pintarSalas() {
     html += '<a class="tarjeta" href="?solicitud=1&sala=' + encodeURIComponent(s.id) + '&fecha=' + esc(estado.fecha) + '">' +
       '<div class="cartel">' +
       (FOTOS[s.id] ? '<img class="foto" src="' + esc(FOTOS[s.id]) + '" alt="Foto de la ' + esc(s.nombre) + '" loading="lazy" onerror="fotoFalla(this)"><span class="velo"></span>' : '') +
-      insignia + '<span class="cupo-cartel">' + ic('gente') + esc(s.capacidad) + ' lugares</span></div>' +
+      insignia + mesaHTML(s.capacidad) + '<span class="cupo-cartel">' + ic('gente') + esc(s.capacidad) + ' lugares</span></div>' +
       '<div class="cuerpo"><h3>' + esc(s.nombre) + '</h3>' +
       '<div class="chips">' + EQUIPAMIENTO.map(e => '<span>' + esc(e) + '</span>').join('') + '</div>' +
       '<div class="llamada">Apartar esta sala' + ic('flechaDer') + '</div></div>' +
