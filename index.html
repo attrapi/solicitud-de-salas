@@ -173,7 +173,7 @@
   .agendas{display:grid;gap:12px;min-width:620px;}
   .cab-sala, .cab-hora{position:sticky;top:0;z-index:6;background:var(--surface);}
   .cab-sala{font-family:var(--fuente-tit);font-size:15px;font-weight:800;color:var(--vino);
-    letter-spacing:.02em;padding:0 0 8px;border-bottom:2px solid var(--borde);}
+    letter-spacing:.02em;padding:0 0 8px;border-bottom:2px solid var(--borde);text-align:center;}
   .cab-sala small{display:block;font-family:var(--fuente);font-size:11px;font-weight:600;color:var(--tenue);
     letter-spacing:.04em;text-transform:uppercase;margin-top:2px;}
   .col-horas{position:relative;height:720px;}
@@ -719,6 +719,7 @@ function pintarSalas() {
       '<div class="leyenda">' +
       '<span><i style="background:var(--vino)"></i>Confirmada</span>' +
       '<span><i style="background:var(--st-curso)"></i>En curso</span>' +
+      '<span><i style="background:#7d8a97"></i>Concluida</span>' +
       '<span><i style="background:repeating-linear-gradient(45deg,#fbeaea,#fbeaea 5px,#f4d6d4 5px,#f4d6d4 10px)"></i>Sala bloqueada</span>' +
       '<span>Toca un bloque para ver el detalle.</span></div></div>';
   }
@@ -828,7 +829,7 @@ function modalDetalle(id) {
     if (!r) return;
     const e = ESTATUS[estatusVisible(r)] || ESTATUS.pendiente;
     cuerpo = '<h3>' + esc(nombreSala(r.sala_id)) + '</h3>' +
-      '<div class="dato"><b>Asunto:</b> ' + esc(r.tema || '—') + '</div>' +
+      '<div class="dato"><b>Título:</b> ' + esc(r.tema || '—') + '</div>' +
       '<div class="dato"><b>Solicita:</b> ' + esc(r.nombre) + '</div>' +
       (r.area ? '<div class="dato"><b>Área:</b> ' + esc(r.area) + '</div>' : '') +
       (r.proyecto ? '<div class="dato"><b>Proyecto:</b> ' + esc(r.proyecto) + '</div>' : '') +
@@ -861,7 +862,7 @@ function pintarSolicitud() {
     '<div class="panel"><form id="formSolicitud" novalidate>' +
     '<div class="rejilla">' +
     campoTexto('nombre', 'Tu nombre', '', 'required maxlength="90" autocomplete="name"') +
-    campoTexto('tema', 'Asunto', '', 'required maxlength="140" placeholder="¿De qué trata la reunión?"') +
+    campoTexto('tema', 'Título de la reunión', '', 'required maxlength="140" placeholder="¿De qué trata la reunión?"') +
     '<div class="campo todo"><label>Participantes</label>' +
     '<input name="participantes" required maxlength="220" list="lista-participantes" placeholder="Nombres de quienes asistirán">' +
     '<datalist id="lista-participantes">' + estado.sugeridos.map(s => '<option value="' + esc(s) + '"></option>').join('') + '</datalist></div>' +
@@ -875,9 +876,6 @@ function pintarSolicitud() {
     '<div class="campo todo" id="dispo-wrap" style="display:none"><div class="aviso-caja" id="dispo-caja" style="margin:0"></div></div>' +
     '<div class="campo"><label>Horario de inicio</label><select name="inicio" id="sel-inicio" required><option value="">Primero elige sala y fecha…</option></select></div>' +
     '<div class="campo"><label>Horario de término</label><select name="fin" id="sel-fin" required><option value="">Primero elige sala y fecha…</option></select></div>' +
-    '<div class="campo todo"><label>Notas</label><textarea name="notas" required rows="4" maxlength="600" placeholder="Escribe aquí tus observaciones"></textarea></div>' +
-    '<div class="campo todo"><label>Enlace de consulta</label><input name="link_doc" type="url" placeholder="https://drive.google.com/… (opcional)">' +
-    '<div class="pista">Opcional. Si hay un documento, minuta o presentación que quieras dejar a la mano.</div></div>' +
     '</div>' +
     '<div class="acciones-form" style="justify-content:flex-end">' +
     '<button type="submit" class="btn btn-vino" id="btnEnviar">Enviar solicitud</button></div>' +
@@ -960,8 +958,6 @@ async function enviarSolicitud(form) {
   if (!area) return falla('Falta indicar el área.');
   if (!proyecto) return falla('Falta indicar el proyecto.');
   if (d.fecha < hoyMx()) return falla('Esa fecha ya pasó. Elige el día de hoy o una fecha próxima.');
-  const link = String(d.link_doc || '').trim();
-  if (link && !enlaceSeguro(link)) return falla('El enlace de consulta debe empezar con https:// (o déjalo vacío).');
   const i = toMin(d.inicio), f = toMin(d.fin);
   if (i === null || f === null) return falla('Falta elegir el horario de inicio y de término.');
   if (i >= f) return falla('El horario de término debe ser después del horario de inicio.');
@@ -976,8 +972,7 @@ async function enviarSolicitud(form) {
     const r = await enviar({
       accion:'solicitar', sala_id:d.sala_id, fecha:d.fecha, inicio:d.inicio, fin:d.fin,
       nombre:String(d.nombre).trim(), tema:String(d.tema).trim(), participantes:String(d.participantes || '').trim(),
-      num_participantes:String(d.num_participantes || ''), area:area, proyecto:proyecto,
-      notas:String(d.notas || '').trim(), link_doc:enlaceSeguro(link)
+      num_participantes:String(d.num_participantes || ''), area:area, proyecto:proyecto
     });
     if (!r.ok) return falla(r.error || 'No se pudo registrar la solicitud.');
     estado.enviado = true;
@@ -1018,7 +1013,7 @@ function filasTablero(gestionable) {
         '<div class="celda hora" data-et="Fecha / horario">' + esc(fmtFecha(r.fecha)) + '<br>' + horario + '</div>' +
         '<div class="celda sala" data-et="Sala">' + esc(nombreSala(r.sala_id)) + '</div>' +
         '<div class="celda" data-et="Área">—</div>' +
-        '<div class="celda" data-et="Asunto">' + esc(r.descripcion || 'Sala bloqueada') +
+        '<div class="celda" data-et="Título">' + esc(r.descripcion || 'Sala bloqueada') +
           (r.motivo ? '<div class="sub-dato">' + ic('info') + esc(r.motivo) + '</div>' : '') + '</div>' +
         '<div class="celda" data-et="Proyecto">—</div>' +
         '<div class="celda estatus" data-et="Estatus"><span style="color:var(--st-cancelada);border-color:var(--st-cancelada)">BLOQUEADA</span>' +
@@ -1040,7 +1035,7 @@ function filasTablero(gestionable) {
       '<div class="celda hora" data-et="Fecha / horario">' + esc(fmtFecha(r.fecha)) + '<br>' + horario + '</div>' +
       '<div class="celda sala" data-et="Sala">' + esc(nombreSala(r.sala_id)) + '</div>' +
       '<div class="celda" data-et="Área">' + esc(r.area || '—') + '</div>' +
-      '<div class="celda" data-et="Asunto">' + esc(r.tema || '—') +
+      '<div class="celda" data-et="Título">' + esc(r.tema || '—') +
         (verParticipantes ? '<div class="sub-dato">' + ic('gente') + gente + '</div>' : '') +
         (gestionable && r.nombre ? '<div class="sub-dato">' + ic('info') + 'Solicitó: ' + esc(r.nombre) + '</div>' : '') +
         (gestionable && r.notas ? '<div class="sub-dato">' + ic('info') + esc(r.notas) + '</div>' : '') +
@@ -1057,7 +1052,7 @@ function filasTablero(gestionable) {
 function encabezadoTablero(gestionable) {
   return '<div class="fila encabezado">' +
     '<div class="celda">Fecha / Horario</div><div class="celda">Sala</div><div class="celda">Área</div>' +
-    '<div class="celda">Asunto</div><div class="celda">Proyecto</div><div class="celda">Estatus</div>' +
+    '<div class="celda">Título de la reunión</div><div class="celda">Proyecto</div><div class="celda">Estatus</div>' +
     (gestionable ? '<div class="celda">Cambiar</div>' : '') + '</div>';
 }
 
@@ -1126,7 +1121,7 @@ function pintarAdmin() {
       '<div class="tit">' + esc(nombreSala(r.sala_id)) + ' · ' + esc(fmtFecha(r.fecha)) + ' · ' + esc(r.inicio) + ' – ' + esc(r.fin) + '</div>' +
       (ch.length ? '<div class="choque">' + ic('info') + '<span>Ojo: se encima con ' + esc(ch.join('; ')) + '.</span></div>' : '') +
       '<div class="dato"><b>Solicita:</b> ' + esc(r.nombre) + (r.area ? ' · <b>Área:</b> ' + esc(r.area) : '') + (r.proyecto ? ' · <b>Proyecto:</b> ' + esc(r.proyecto) : '') + '</div>' +
-      (r.tema ? '<div class="dato"><b>Asunto:</b> ' + esc(r.tema) + '</div>' : '') +
+      (r.tema ? '<div class="dato"><b>Título:</b> ' + esc(r.tema) + '</div>' : '') +
       (htmlGente(r) ? '<div class="dato"><b>Participantes:</b> ' + htmlGente(r) + '</div>' : '') +
       (r.notas ? '<div class="dato"><b>Notas:</b> ' + esc(r.notas) + '</div>' : '') +
       (enlaceSeguro(r.link_doc) ? '<div class="dato"><a href="' + esc(enlaceSeguro(r.link_doc)) + '" target="_blank" rel="noopener">Enlace de consulta</a></div>' : '') +
@@ -1199,7 +1194,7 @@ function formReservacionHTML() {
     '<div class="desc">' + (r ? 'Los cambios se guardan en la hoja de cálculo.' : 'Para apuntar una reunión directamente, sin pasar por el formulario público.') + '</div>' +
     '<form id="formReservacion" novalidate><div class="rejilla">' +
     campoTexto('nombre', 'Nombre de quien solicita', d.nombre, 'required maxlength="90"') +
-    campoTexto('tema', 'Asunto', d.tema, 'required maxlength="140"') +
+    campoTexto('tema', 'Título de la reunión', d.tema, 'required maxlength="140"') +
     '<div class="campo todo"><label>Participantes</label><input name="participantes" maxlength="220" list="lista-participantes" value="' + esc(d.participantes) + '">' +
     '<datalist id="lista-participantes">' + estado.sugeridos.map(s => '<option value="' + esc(s) + '"></option>').join('') + '</datalist></div>' +
     campoNumParticipantes(d.num_participantes, false) +
