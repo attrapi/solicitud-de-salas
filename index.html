@@ -169,7 +169,8 @@
     background:#fbfcfd;color:var(--texto);font-family:inherit;}
 
   /* ---------- Agenda del día ---------- */
-  .agendas-scroll{overflow:auto;max-height:460px;overscroll-behavior:contain;}
+  /* Sin overscroll-behavior: al llegar al tope el scroll continúa con la página. */
+  .agendas-scroll{overflow:auto;max-height:460px;}
   .agendas{display:grid;gap:12px;min-width:620px;}
   .cab-sala, .cab-hora{position:sticky;top:0;z-index:6;background:var(--surface);}
   .cab-sala{font-family:var(--fuente-tit);font-size:15px;font-weight:800;color:var(--vino);
@@ -1209,9 +1210,6 @@ function formReservacionHTML() {
     '<div class="campo"><label>Horario de inicio</label><select name="inicio" id="admin-inicio" required></select></div>' +
     '<div class="campo"><label>Horario de término</label><select name="fin" id="admin-fin" required></select></div>' +
     '<div class="campo todo" id="admin-dispo"></div>' +
-    '<div class="campo todo"><label>Notas</label><textarea name="notas" rows="3" maxlength="600">' + esc(d.notas) + '</textarea></div>' +
-    '<div class="campo todo"><label>Enlace de consulta</label><input name="link_doc" type="url" value="' + esc(d.link_doc) + '" placeholder="https://… (opcional)"></div>' +
-    '<div class="campo todo"><label>Enlace personal (sólo lo ves tú)</label><input name="link_admin" type="url" value="' + esc(d.link_admin) + '" placeholder="https://… (opcional, no aparece en el formulario público)"></div>' +
     '<div class="campo todo"><label class="marca-check"><input type="checkbox" name="mostrar_proyeccion"' + (d.mostrar_proyeccion ? ' checked' : '') + '> Mostrar esta reunión en la pantalla de proyección</label>' +
     '<label class="marca-check" style="margin-top:8px"><input type="checkbox" name="mostrar_participantes"' + (d.mostrar_participantes ? ' checked' : '') + '> Mostrar los participantes en la proyección</label></div>' +
     '</div><div class="acciones-form"><button class="btn btn-oro" type="submit">' + ic('check') + 'Guardar</button>' +
@@ -1564,7 +1562,6 @@ document.addEventListener('submit', async e => {
       tema:String(d.tema).trim(), participantes:String(d.participantes || '').trim(),
       num_participantes:String(d.num_participantes || ''),
       area: valorConOtro(f, 'area'), proyecto: valorConOtro(f, 'proyecto'),
-      notas:String(d.notas || '').trim(), link_doc: enlaceSeguro(d.link_doc), link_admin: enlaceSeguro(d.link_admin),
       estatus:d.estatus, mostrar_proyeccion: !!d.mostrar_proyeccion, mostrar_participantes: !!d.mostrar_participantes
     };
     const choques = conflictos({ id:estado.editandoId || '', sala_id:cuerpo.sala_id, fecha:cuerpo.fecha, inicio:cuerpo.inicio, fin:cuerpo.fin });
