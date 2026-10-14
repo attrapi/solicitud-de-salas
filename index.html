@@ -169,8 +169,9 @@
     background:#fbfcfd;color:var(--texto);font-family:inherit;}
 
   /* ---------- Agenda del día ---------- */
-  .agendas-scroll{overflow-x:auto;}
+  .agendas-scroll{overflow:auto;max-height:460px;overscroll-behavior:contain;}
   .agendas{display:grid;gap:12px;min-width:620px;}
+  .cab-sala, .cab-hora{position:sticky;top:0;z-index:6;background:var(--surface);}
   .cab-sala{font-family:var(--fuente-tit);font-size:15px;font-weight:800;color:var(--vino);
     letter-spacing:.02em;padding:0 0 8px;border-bottom:2px solid var(--borde);}
   .cab-sala small{display:block;font-family:var(--fuente);font-size:11px;font-weight:600;color:var(--tenue);
@@ -186,6 +187,11 @@
   .bloque.concluida{background:#7d8a97;color:#fff;}
   .bloque.pendiente{background:repeating-linear-gradient(45deg,#f8f0d8,#f8f0d8 8px,#efe2bb 8px,#efe2bb 16px);color:#5a4510;border:1px dashed var(--oro);}
   .bloque.bloqueo{background:repeating-linear-gradient(45deg,#fbeaea,#fbeaea 8px,#f4d6d4 8px,#f4d6d4 16px);color:#8d2e22;border:1px dashed #c0392b;}
+  /* Línea de la hora actual */
+  .ahora{position:absolute;left:0;right:0;z-index:3;border-top:2px solid #c0392b;pointer-events:none;}
+  .ahora::before{content:'';position:absolute;left:-4px;top:-5px;width:8px;height:8px;border-radius:50%;background:#c0392b;}
+  .marca-ahora{position:absolute;right:8px;transform:translateY(-50%);font-size:10.5px;font-weight:800;
+    color:#c0392b;font-family:var(--mono);background:var(--surface);padding:1px 2px;}
   .leyenda{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--suave);margin-top:14px;}
   .leyenda i{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:6px;vertical-align:-2px;}
 
@@ -701,6 +707,7 @@ function pintarSalas() {
   }
   html += '</main>';
   document.getElementById('raiz').innerHTML = html;
+  acomodarAgendas();
 }
 
 // Las tres salas, una junto a la otra, con una sola columna de horas a la izquierda.
@@ -710,6 +717,10 @@ function agendasHTML() {
   for (let h = HORA_MIN; h <= HORA_MAX; h++) {
     horas += '<span style="top:' + ((h - HORA_MIN) * 60 / total * 100) + '%">' + String(h).padStart(2, '0') + ':00</span>';
   }
+  if (estado.fecha === hoyMx()) {
+    const m = minutosAhoraMx() - HORA_MIN * 60;
+    if (m >= 0 && m <= total) horas += '<span class="marca-ahora" style="top:' + (m / total * 100) + '%">' + aHora(minutosAhoraMx()) + '</span>';
+  }
   horas += '</div>';
   const cabeceras = estado.salas.map(sa => {
     const bl = bloqueoDeDia(sa.id, estado.fecha);
@@ -717,7 +728,7 @@ function agendasHTML() {
       '<small>' + (bl ? 'No disponible' : esc(sa.capacidad) + ' lugares') + '</small></div>';
   }).join('');
   return '<div class="agendas-scroll"><div class="agendas" style="grid-template-columns:52px repeat(' + estado.salas.length + ',1fr)">' +
-    '<div></div>' + cabeceras + horas + estado.salas.map(sa => agendaHTML(sa.id)).join('') +
+    '<div class="cab-hora"></div>' + cabeceras + horas + estado.salas.map(sa => agendaHTML(sa.id)).join('') +
     '</div></div>';
 }
 function agendaHTML(salaId) {
@@ -752,7 +763,38 @@ function agendaHTML(salaId) {
       'height:calc(' + ((fin - ini) / total * 100) + '% - 2px);left:calc(' + (r._col / cols * 100) + '% + 6px);width:calc(' + (100 / cols) + '% - 12px)">' +
       '<strong>' + esc(r.inicio) + '–' + esc(r.fin) + '</strong>' + esc(r.t1) + (r.t2 ? '<br>' + esc(r.t2) : '') + '</button>';
   });
+  if (estado.fecha === hoyMx()) {
+    const m = minutosAhoraMx() - HORA_MIN * 60;
+    if (m >= 0 && m <= total) html += '<div class="ahora" style="top:' + (m / total * 100) + '%"></div>';
+  }
   return html + '</div>';
+}
+
+/* El panel de horarios sigue el reloj: se acomoda una hora antes de la actual y
+   se va recorriendo solo. Si alguien lo mueve a mano, se respeta su posición y
+   dos minutos después vuelve a seguir la hora. */
+const scrollAgendas = { manual: false, pos: 0, programando: false, t: null };
+function posicionPorHora(cont) {
+  if (estado.fecha !== hoyMx()) return 0;
+  const cuerpo = cont.querySelector('.agenda'), cab = cont.querySelector('.cab-sala');
+  if (!cuerpo) return 0;
+  const total = (HORA_MAX - HORA_MIN) * 60;
+  const desde = Math.min(Math.max(minutosAhoraMx() - 60 - HORA_MIN * 60, 0), total);
+  return Math.max(cuerpo.offsetTop - (cab ? cab.offsetHeight : 0) + (desde / total) * cuerpo.offsetHeight, 0);
+}
+function acomodarAgendas() {
+  const cont = document.querySelector('.agendas-scroll');
+  if (!cont) return;
+  cont.addEventListener('scroll', function () {
+    if (scrollAgendas.programando) return;
+    scrollAgendas.manual = true;
+    scrollAgendas.pos = cont.scrollTop;
+    clearTimeout(scrollAgendas.t);
+    scrollAgendas.t = setTimeout(function () { scrollAgendas.manual = false; }, 120000);
+  }, { passive: true });
+  scrollAgendas.programando = true;
+  cont.scrollTop = scrollAgendas.manual ? scrollAgendas.pos : posicionPorHora(cont);
+  setTimeout(function () { scrollAgendas.programando = false; }, 80);
 }
 
 function modalDetalle(id) {
@@ -1657,6 +1699,8 @@ function ocupadoEscribiendo() {
     try { await cargar(); pintar(); } catch (x) {}
   }, VISTA === 'tablero' ? 20000 : 60000);
   if (VISTA === 'tablero') setInterval(actualizarReloj, 15000);
+  // El panel de horarios se recorre solo cada minuto, aunque no lleguen datos nuevos.
+  if (VISTA === 'salas') setInterval(function () { if (!document.hidden) pintarSalas(); }, 60000);
 })();
 </script>
 </body>
