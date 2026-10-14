@@ -879,8 +879,8 @@ function pintarSolicitud() {
     '<div class="campo todo"><label>Enlace de consulta</label><input name="link_doc" type="url" placeholder="https://drive.google.com/… (opcional)">' +
     '<div class="pista">Opcional. Si hay un documento, minuta o presentación que quieras dejar a la mano.</div></div>' +
     '</div>' +
-    '<div class="acciones-form"><button type="submit" class="btn btn-oro" id="btnEnviar">' + ic('mas') + 'Enviar solicitud</button>' +
-    '<a class="btn" href="' + urlBase() + '">Ver agenda de salas</a></div>' +
+    '<div class="acciones-form" style="justify-content:flex-end">' +
+    '<button type="submit" class="btn btn-vino" id="btnEnviar">Enviar solicitud</button></div>' +
     '<div class="error-form" id="errorForm"></div>' +
     '</form></div>' +
     '<div style="text-align:center;font-size:12px;color:var(--tenue)">Horario disponible: ' + HORA_MIN + ':00 a ' + HORA_MAX + ':00 h.</div>' +
@@ -952,7 +952,7 @@ function actualizarDisponibilidad() {
 
 async function enviarSolicitud(form) {
   const err = document.getElementById('errorForm'), boton = document.getElementById('btnEnviar');
-  const falla = m => { err.textContent = m; err.style.display = 'block'; boton.disabled = false; boton.innerHTML = ic('mas') + 'Enviar solicitud'; };
+  const falla = m => { err.textContent = m; err.style.display = 'block'; boton.disabled = false; boton.textContent = 'Enviar solicitud'; };
   err.style.display = 'none';
   if (!form.checkValidity()) { form.reportValidity(); return; }
   const d = Object.fromEntries(new FormData(form).entries());
